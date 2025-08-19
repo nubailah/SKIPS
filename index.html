@@ -20,7 +20,7 @@
 
   <hr>
 
-  <h2>Carian Staf</h2>
+  <h2>Carian Staf (Column G)</h2>
   <select id="stafDropdown">
     <option value="">-- Pilih Staf --</option>
   </select>
@@ -54,7 +54,8 @@
     fetch(sheetURL)
       .then(res => res.text())
       .then(data => {
-        sheetData = data.split('\n').map(r => r.split(','));
+        // Parse CSV, remove empty rows
+        sheetData = data.split('\n').map(r => r.split(',')).filter(r => r.length > 1);
 
         // Populate staf dropdown (unique Column G)
         const stafDropdown = document.getElementById('stafDropdown');
@@ -86,9 +87,13 @@
 
       // Display
       const resultDiv = document.getElementById('kategoriResult');
-      resultDiv.innerHTML = '<ul>' +
-        Object.entries(groupMap).map(([k, v]) => `<li>${k}: ${v}</li>`).join('') +
-        '</ul>';
+      if(Object.keys(groupMap).length === 0){
+        resultDiv.innerHTML = '<p>Tiada data untuk kategori ini.</p>';
+      } else {
+        resultDiv.innerHTML = '<ul>' +
+          Object.entries(groupMap).map(([k, v]) => `<li>${k}: ${v}</li>`).join('') +
+          '</ul>';
+      }
     });
 
     // Event staf dropdown
@@ -100,7 +105,7 @@
       tbody.innerHTML = '';
       filtered.forEach(r => {
         const tr = document.createElement('tr');
-        [0, 1, 2, 3].forEach(i => {
+        [0,1,2,3].forEach(i => {
           const td = document.createElement('td');
           td.textContent = r[i];
           tr.appendChild(td);
