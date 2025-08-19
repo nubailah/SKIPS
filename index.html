@@ -60,48 +60,48 @@
   <option value="PAM">Pengajian Am</option>
 </select>
 
-<h3>Ringkasan Column E</h3>
+<h3>Ringkasan</h3>
 <table id="kategoriTable">
   <thead>
     <tr>
-      <th>Column E</th>
-      <th>Jumlah Column D</th>
+      <th>NAMA STAFF</th>
+      <th>JUMLAH PEMBERAT</th>
     </tr>
   </thead>
   <tbody></tbody>
 </table>
 
-<h3>Detail Data Kategori</h3>
+<h3>Detail Kategori</h3>
 <table id="detailTable">
   <thead>
     <tr>
-      <th>Column A</th>
-      <th>Column B</th>
-      <th>Column C</th>
-      <th>Column D</th>
+      <th>KOD</th>
+      <th>JAWATANKUASA</th>
+      <th>JAWATAN</th>
+      <th>PEMBERAT</th>
     </tr>
   </thead>
   <tbody></tbody>
 </table>
-<p><strong>Jumlah Column D:</strong> <span id="detailSumD">0</span></p>
+<p><strong>JUMLAH PEMBERAT:</strong> <span id="detailSumD">0</span></p>
 
 <hr>
 
-<h2>Carian Jawatankuasa (Column B)</h2>
+<h2>Carian Jawatankuasa</h2>
 <select id="jawatankuasaDropdown">
   <option value="">-- Pilih Jawatankuasa --</option>
 </select>
 <table id="jawatankuasaTable">
   <thead>
     <tr>
-      <th>Column A</th>
-      <th>Column D</th>
-      <th>Column F</th>
+      <th>JAWATAN</th>
+      <th>PEMBERAT</th>
+      <th>NAMA STAFF</th>
     </tr>
   </thead>
   <tbody id="jawatankuasaTableBody"></tbody>
 </table>
-<p><strong>Jumlah Column D:</strong> <span id="jawatankuasaSumD">0</span></p>
+<p><strong>BILANGAN NAMA STAFF:</strong> <span id="jawatankuasaCount">0</span></p>
 
 <script>
 const sheetURL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTKxmTXERKgk9gTUlqlyeRrmdfJU21FMdj1mDpf5azCa_hW4Gfg5TgpQcHvb-ujRo72cLIN2p0Lkgcj/pub?output=csv&gid=975658514';
@@ -135,32 +135,32 @@ document.getElementById('kategoriDropdown').addEventListener('change', function(
 
   const filtered = sheetData.filter(r => r[4] && r[4].endsWith(suffix));
 
-  // Group by Column E
+  // Group by NAMA STAFF (Column E)
   const groupMap = {};
   filtered.forEach(r => {
-    const key = r[4];
-    const val = parseFloat(r[3] || 0);
+    const key = r[4]; // Column E
+    const val = parseFloat(r[3] || 0); // Column D
     if(groupMap[key]) groupMap[key] += val;
     else groupMap[key] = val;
   });
 
   const sorted = Object.entries(groupMap).sort((a,b) => b[1]-a[1]);
 
-  sorted.forEach(([colE, sumD]) => {
+  sorted.forEach(([name, sum]) => {
     const tr = document.createElement('tr');
-    tr.innerHTML = `<td>${colE}</td><td>${sumD}</td>`;
+    tr.innerHTML = `<td>${name}</td><td>${sum}</td>`;
     tr.addEventListener('click', () => {
       if(selectedRowKategori) selectedRowKategori.classList.remove('selected');
       tr.classList.add('selected');
       selectedRowKategori = tr;
-      showDetailKategori(colE);
+      showDetailKategori(name);
     });
     tbody.appendChild(tr);
   });
 });
 
-function showDetailKategori(colEValue){
-  const detailRows = sheetData.filter(r => r[4] === colEValue);
+function showDetailKategori(name){
+  const detailRows = sheetData.filter(r => r[4] === name);
   const tbody = document.querySelector('#detailTable tbody');
   tbody.innerHTML = '';
 
@@ -169,7 +169,7 @@ function showDetailKategori(colEValue){
   let sumD = 0;
   sortedRows.forEach(r => {
     const tr = document.createElement('tr');
-    [0,1,2,3].forEach(i => {
+    [0,1,2,3].forEach(i => { // Column A-D
       const td = document.createElement('td');
       td.textContent = r[i];
       tr.appendChild(td);
@@ -183,7 +183,7 @@ function showDetailKategori(colEValue){
 // ====== JAWATANKUASA SECTION ======
 function populateJawatankuasaDropdown(){
   const dropdown = document.getElementById('jawatankuasaDropdown');
-  const uniqueValues = [...new Set(sheetData.map(r => r[1].trim()))];
+  const uniqueValues = [...new Set(sheetData.map(r => r[1].trim()))]; // Column B
   uniqueValues.forEach(val => {
     const option = document.createElement('option');
     option.value = val;
@@ -194,13 +194,13 @@ function populateJawatankuasaDropdown(){
 
 document.getElementById('jawatankuasaDropdown').addEventListener('change', function() {
   const selected = this.value;
-  const filtered = sheetData.filter(r => r[1].trim() === selected);
+  const filtered = sheetData.filter(r => r[1].trim() === selected); // Column B
   const tbody = document.getElementById('jawatankuasaTableBody');
   tbody.innerHTML = '';
 
   filtered.forEach(r => {
     const tr = document.createElement('tr');
-    [0,3,5].forEach(i => { // Column A, D, F
+    [2,3,5].forEach(i => { // Column C, D, F
       const td = document.createElement('td');
       td.textContent = r[i];
       tr.appendChild(td);
@@ -208,8 +208,9 @@ document.getElementById('jawatankuasaDropdown').addEventListener('change', funct
     tbody.appendChild(tr);
   });
 
-  const sumD = filtered.reduce((acc,r) => acc + parseFloat(r[3] || 0), 0);
-  document.getElementById('jawatankuasaSumD').textContent = sumD;
+  // Bilangan F group by B
+  const uniqueF = new Set(filtered.map(r => r[5].trim()));
+  document.getElementById('jawatankuasaCount').textContent = uniqueF.size;
 });
 </script>
 </body>
