@@ -1,85 +1,58 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Carian Jawatankuasa</title>
+  <meta charset="UTF-8">
+  <title>Data Staf</title>
   <style>
-    body { font-family: Arial, sans-serif; margin: 20px; }
-    select, table { margin-top: 10px; }
-    table { border-collapse: collapse; width: 60%; }
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    table { border-collapse: collapse; width: 100%; margin-top: 10px; }
     th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-    th { background-color: #f2f2f2; }
-    .summary { margin-top: 20px; font-weight: bold; }
+    th { background-color: #f4f4f4; }
+    #search { margin-bottom: 10px; padding: 5px; width: 300px; }
   </style>
 </head>
 <body>
-  <h2>Carian Jawatankuasa Staf</h2>
-  
-  <label>Pilih Nama Staf:</label>
-  <select id="staffSelect"></select>
-
-  <table id="resultTable">
-    <thead>
-      <tr>
-        <th>Nama Unit</th>
-        <th>Jawatan</th>
-        <th>P'berat</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
-
-  <div class="summary">
-    Jumlah P’berat: <span id="totalWeight">0</span><br>
-    Jumlah Unit: <span id="totalUnit">0</span>
-  </div>
+  <h2>Senarai Staf</h2>
+  <input type="text" id="search" placeholder="Cari nama staf...">
+  <table id="dataTable"></table>
 
   <script>
-    const API_KEY = "AIzaSyDZ_H2MYtZHrAdxLGxYNUwrUcXUJRrrS34";
-    const SPREADSHEET_ID = "1uFVEYip6WQEOUugGXA48QkqqweU2dnFj7cFZaSqwvBM";
-    const RANGE = "ALL!A:D";  // A = Nama Staf, B = Nama Unit, C = Jawatan, D = P’berat
+    const sheetId = "1uFVEYip6WQEOUugGXA48QkqqweU2dnFj7cFZaSqwvBM";
+    const apiKey = "AIzaSyDZ_H2MYtZHrAdxLGxYNUwrUcXUJRrrS34";
+    const range = "ALL!A1:C50";
 
     async function loadData() {
-      const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${RANGE}?key=${API_KEY}`;
+      const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${range}?key=${apiKey}`;
       const res = await fetch(url);
       const data = await res.json();
-      const values = data.values.slice(1); // buang header row
 
-      const staffSelect = document.getElementById("staffSelect");
-      const uniqueStaff = [...new Set(values.map(row => row[0]))];
+      const values = data.values;
+      if (!values) return;
 
-      // isi dropdown
-      uniqueStaff.forEach(staff => {
-        const option = document.createElement("option");
-        option.value = staff;
-        option.textContent = staff;
-        staffSelect.appendChild(option);
-      });
+      // buat table
+      let table = "<tr>";
+      values[0].forEach(h => { table += `<th>${h}</th>`; });
+      table += "</tr>";
 
-      staffSelect.addEventListener("change", () => displayStaff(values, staffSelect.value));
+      for (let i = 1; i < values.length; i++) {
+        table += "<tr>";
+        values[i].forEach(v => { table += `<td>${v}</td>`; });
+        table += "</tr>";
+      }
+
+      document.getElementById("dataTable").innerHTML = table;
     }
 
-    function displayStaff(values, selectedStaff) {
-      const tbody = document.querySelector("#resultTable tbody");
-      tbody.innerHTML = "";
-
-      let totalWeight = 0;
-      let units = new Set();
-
-      values.forEach(row => {
-        const [nama, unit, jawatan, berat] = row;
-        if (nama === selectedStaff) {
-          const tr = document.createElement("tr");
-          tr.innerHTML = `<td>${unit}</td><td>${jawatan}</td><td>${berat}</td>`;
-          tbody.appendChild(tr);
-
-          totalWeight += Number(berat);
-          units.add(unit);
-        }
+    // search filter
+    document.getElementById("search").addEventListener("keyup", function() {
+      let filter = this.value.toLowerCase();
+      let rows = document.querySelectorAll("#dataTable tr");
+      rows.forEach((row, i) => {
+        if (i === 0) return; // skip header
+        let text = row.innerText.toLowerCase();
+        row.style.display = text.includes(filter) ? "" : "none";
       });
-
-      document.getElementById("totalWeight").textContent = totalWeight;
-      document.getElementById("totalUnit").textContent = units.size;
-    }
+    });
 
     loadData();
   </script>
