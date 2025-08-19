@@ -9,6 +9,7 @@
   th, td { border: 1px solid #000; padding: 5px; text-align: left; }
   th { background-color: #f2f2f2; }
   tr:hover { background-color: #f9f9f9; cursor: pointer; }
+  .selected { background-color: #d0ebff !important; }
 </style>
 </head>
 <body>
@@ -70,6 +71,8 @@ Papa.parse(sheetURL, {
   }
 });
 
+let selectedRow = null;
+
 // Event Kategori Dropdown
 document.getElementById('kategoriDropdown').addEventListener('change', function() {
   const selected = this.value;
@@ -78,6 +81,7 @@ document.getElementById('kategoriDropdown').addEventListener('change', function(
   tbody.innerHTML = '';
   document.querySelector('#detailTable tbody').innerHTML = '';
   document.getElementById('detailSumD').textContent = '0';
+  selectedRow = null;
 
   if(!suffix) return;
 
@@ -99,7 +103,13 @@ document.getElementById('kategoriDropdown').addEventListener('change', function(
   sorted.forEach(([colE, sumD]) => {
     const tr = document.createElement('tr');
     tr.innerHTML = `<td>${colE}</td><td>${sumD}</td>`;
-    tr.addEventListener('click', () => showDetail(colE));
+    tr.addEventListener('click', () => {
+      // Highlight row
+      if(selectedRow) selectedRow.classList.remove('selected');
+      tr.classList.add('selected');
+      selectedRow = tr;
+      showDetail(colE);
+    });
     tbody.appendChild(tr);
   });
 });
@@ -110,8 +120,11 @@ function showDetail(colEValue){
   const tbody = document.querySelector('#detailTable tbody');
   tbody.innerHTML = '';
 
+  // Sort detail ikut Column D menurun
+  const sortedRows = detailRows.sort((a,b) => parseFloat(b[3]||0) - parseFloat(a[3]||0));
+
   let sumD = 0;
-  detailRows.forEach(r => {
+  sortedRows.forEach(r => {
     const tr = document.createElement('tr');
     [0,1,2,3].forEach(i => {
       const td = document.createElement('td');
