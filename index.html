@@ -1,52 +1,78 @@
+
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ms">
 <head>
   <meta charset="UTF-8">
-  <title>Laporan Staf Real-Time</title>
+  <title>Laporan Jawatankuasa</title>
   <style>
     body { font-family: Arial, sans-serif; padding: 20px; }
-    table { border-collapse: collapse; width: 100%; }
-    th, td { border: 1px solid #ccc; padding: 8px; }
-    th { background: #eee; }
+    input { padding: 8px; margin-bottom: 10px; width: 250px; }
+    table { border-collapse: collapse; width: 100%; margin-top: 10px; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+    th { background: #f0f0f0; }
   </style>
 </head>
 <body>
-  <h2>Laporan Staf (Real-Time)</h2>
+  <h2>Laporan Jawatankuasa</h2>
+
+  <input type="text" id="search" placeholder="Cari nama staf...">
+
   <table id="dataTable">
     <thead>
       <tr>
         <th>Nama Staf</th>
         <th>Jawatankuasa</th>
-        <th>Pemberat</th>
+        <th>Jumlah Pemberat</th>
       </tr>
     </thead>
     <tbody></tbody>
   </table>
 
   <script>
-    const url = "https://script.google.com/macros/s/AKfycbwD5z8rdgj8MTcwcR8uwNVttwewBJ3pWJ8H0XVXIMJ5GoL2BINCWG6iTqes_Uh7m-nnvA/exec"; // tukar dgn URL Apps Script cikgu
-    const source = new EventSource(url);
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzDcfLFQl-gTWAtfkweqSNIdl2cGm7y-1p_lpkBqD4t8RBSe2ppHirEiUx4S8K96lyHgw/exec
+"; // ganti dengan URL Web App cikgu
 
-    source.onmessage = function(event) {
-      const data = JSON.parse(event.data);
+    async function loadData() {
+      try {
+        const res = await fetch(APPS_SCRIPT_URL);
+        const data = await res.json();
+        renderTable(data);
+
+        // fungsi carian
+        document.getElementById("search").addEventListener("input", (e) => {
+          const keyword = e.target.value.toLowerCase();
+          const filtered = data.filter(row => 
+            row["Nama Staf"]?.toLowerCase().includes(keyword)
+          );
+          renderTable(filtered);
+        });
+
+      } catch (err) {
+        console.error("Error fetching data:", err);
+      }
+    }
+
+    function renderTable(data) {
       const tbody = document.querySelector("#dataTable tbody");
       tbody.innerHTML = "";
-
       data.forEach(row => {
-        let tr = document.createElement("tr");
+        const tr = document.createElement("tr");
         tr.innerHTML = `
-          <td>${row.nama}</td>
-          <td>${row.jawatankuasa}</td>
-          <td>${row.pemberat}</td>
+          <td>${row["Nama Staf"] || ""}</td>
+          <td>${row["Jawatankuasa"] || ""}</td>
+          <td>${row["Jumlah Pemberat"] || ""}</td>
         `;
         tbody.appendChild(tr);
       });
-    };
+    }
 
-    source.onerror = function(err) {
-      console.error("SSE error:", err);
-    };
+    // auto refresh setiap 1s
+    setInterval(loadData, 1000);
+
+    // load kali pertama
+    loadData();
   </script>
 </body>
 </html>
+
 
