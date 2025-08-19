@@ -22,13 +22,21 @@
   <div id="staffOutput"></div>
 
   <script>
+    // Gantikan dengan Web App URL awak
+    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzMPBtdBxuXVlkURbNKgG-OuRXf60v3QSk-10PA-K6K_D8ik8jG3nQ8qkpXRQ9lyMSALQ/exec";
+
+    // Load kategori
     function loadKategori() {
       let kategori = document.getElementById("kategoriDropdown").value;
       if (!kategori) return;
 
-      google.script.run.withSuccessHandler(displayKategori).getKategoriData(kategori);
+      fetch(`${WEB_APP_URL}?action=getKategoriData&kategori=${kategori}`)
+        .then(res => res.json())
+        .then(data => displayKategori(data))
+        .catch(err => console.error(err));
     }
 
+    // Papar kategori
     function displayKategori(data) {
       let html = "<h3>Ringkasan</h3><table border='1'><tr><th>Nama Staf</th><th>Bil Kod</th><th>Jumlah Pemberat</th></tr>";
       for (let staf in data.summary) {
@@ -45,21 +53,29 @@
       document.getElementById("kategoriOutput").innerHTML = html;
     }
 
+    // Load semua staf
     function loadStaff() {
-      google.script.run.withSuccessHandler(function(staffList) {
-        let dropdown = document.getElementById("stafDropdown");
-        dropdown.innerHTML = "<option value=''>-- Pilih Staf --</option>";
-        staffList.forEach(s => {
-          dropdown.innerHTML += `<option value="${s}">${s}</option>`;
-        });
-      }).getAllStaff();
+      fetch(`${WEB_APP_URL}?action=getAllStaff`)
+        .then(res => res.json())
+        .then(staffList => {
+          let dropdown = document.getElementById("stafDropdown");
+          dropdown.innerHTML = "<option value=''>-- Pilih Staf --</option>";
+          staffList.forEach(s => {
+            dropdown.innerHTML += `<option value="${s}">${s}</option>`;
+          });
+        })
+        .catch(err => console.error(err));
     }
 
+    // Cari staf
     function searchStaff() {
       let staf = document.getElementById("stafDropdown").value;
       if (!staf) return;
 
-      google.script.run.withSuccessHandler(displayStaff).searchStaff(staf);
+      fetch(`${WEB_APP_URL}?action=searchStaff&staf=${staf}`)
+        .then(res => res.json())
+        .then(data => displayStaff(data))
+        .catch(err => console.error(err));
     }
 
     function displayStaff(data) {
