@@ -1,23 +1,27 @@
-
 <!DOCTYPE html>
-<html lang="ms">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Laporan Jawatankuasa</title>
+  <title>Senarai Staf</title>
   <style>
-    body { font-family: Arial, sans-serif; padding: 20px; }
-    input { padding: 8px; margin-bottom: 10px; width: 250px; }
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    select { padding: 5px; font-size: 14px; margin-bottom: 15px; }
     table { border-collapse: collapse; width: 100%; margin-top: 10px; }
-    th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
-    th { background: #f0f0f0; }
+    th, td { border: 1px solid #ddd; padding: 8px; }
+    th { background-color: #f2f2f2; }
   </style>
 </head>
 <body>
-  <h2>Laporan Jawatankuasa</h2>
+  <h2>Senarai Staf</h2>
 
-  <input type="text" id="search" placeholder="Cari nama staf...">
+  <!-- Combo box -->
+  <label for="staffSelect">Pilih Nama Staf:</label>
+  <select id="staffSelect">
+    <option value="">-- Pilih --</option>
+  </select>
 
-  <table id="dataTable">
+  <!-- Jadual hasil carian -->
+  <table id="resultTable" style="display:none;">
     <thead>
       <tr>
         <th>Nama Staf</th>
@@ -25,54 +29,59 @@
         <th>Jumlah Pemberat</th>
       </tr>
     </thead>
-    <tbody></tbody>
+    <tbody id="resultBody"></tbody>
   </table>
 
   <script>
-    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyB51yXVYq6pcRvePVPMgYAxhvlp86_PyC4WPvnCJM_iX8V08ePbWAbuv1MusQO4NiMFA/exec"; // ganti dengan URL Web App cikgu
+    const APPS_SCRIPT_URL = "PASTE_APPS_SCRIPT_URL_HERE"; // ganti dgn URL Apps Script
 
+    let allData = [];
+
+    // Ambil data dari Google Sheets
     async function loadData() {
-      try {
-        const res = await fetch(APPS_SCRIPT_URL);
-        const data = await res.json();
-        renderTable(data);
+      const res = await fetch(APPS_SCRIPT_URL);
+      allData = await res.json();
 
-        // fungsi carian
-        document.getElementById("search").addEventListener("input", (e) => {
-          const keyword = e.target.value.toLowerCase();
-          const filtered = data.filter(row => 
-            row["Nama Staf"]?.toLowerCase().includes(keyword)
-          );
-          renderTable(filtered);
-        });
-
-      } catch (err) {
-        console.error("Error fetching data:", err);
-      }
-    }
-
-    function renderTable(data) {
-      const tbody = document.querySelector("#dataTable tbody");
-      tbody.innerHTML = "";
-      data.forEach(row => {
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td>${row["Nama Staf"] || ""}</td>
-          <td>${row["Jawatankuasa"] || ""}</td>
-          <td>${row["Jumlah Pemberat"] || ""}</td>
-        `;
-        tbody.appendChild(tr);
+      // Isi dropdown dengan senarai Nama Staf
+      const staffSelect = document.getElementById("staffSelect");
+      let names = [...new Set(allData.map(row => row["Nama Staf"]))]; // buang duplicate
+      names.forEach(name => {
+        let option = document.createElement("option");
+        option.value = name;
+        option.textContent = name;
+        staffSelect.appendChild(option);
       });
     }
 
-    // auto refresh setiap 1s
-    setInterval(loadData, 1000);
+    // Bila pilih staf dari combo box
+    document.getElementById("staffSelect").addEventListener("change", function() {
+      const selectedName = this.value;
+      const resultBody = document.getElementById("resultBody");
+      const resultTable = document.getElementById("resultTable");
 
-    // load kali pertama
+      resultBody.innerHTML = "";
+
+      if (selectedName) {
+        const staffData = allData.filter(row => row["Nama Staf"] === selectedName);
+
+        staffData.forEach(row => {
+          let tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td>${row["Nama Staf"]}</td>
+            <td>${row["Jawatankuasa"]}</td>
+            <td>${row["Jumlah Pemberat"]}</td>
+          `;
+          resultBody.appendChild(tr);
+        });
+
+        resultTable.style.display = "table";
+      } else {
+        resultTable.style.display = "none";
+      }
+    });
+
+    // Load data bila page buka
     loadData();
   </script>
 </body>
 </html>
-
-
-
