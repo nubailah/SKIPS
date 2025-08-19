@@ -2,6 +2,13 @@
 <html>
 <head>
   <title>Laporan Staf</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    select, input { margin: 10px 0; padding: 5px; }
+    table { border-collapse: collapse; width: 100%; margin-top: 15px; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+    th { background: #f2f2f2; }
+  </style>
 </head>
 <body>
   <h2>Senarai Staf</h2>
@@ -9,12 +16,40 @@
   <label>Pilih staf:</label>
   <select id="staffSelect"></select>
 
+  <br>
+  <label>Pilih kategori portfolio:</label>
+  <select id="kategoriSelect">
+    <option value="">--Semua--</option>
+    <option value="PT">Pentadbiran</option>
+    <option value="PAM">Pengajian Am</option>
+    <option value="QA">Sains Kuantitatif</option>
+    <option value="ACC">Perakaunan</option>
+  </select>
+
   <div id="result"></div>
 
+  <h3>Cari rekod</h3>
+  <input type="text" id="searchInput" placeholder="Cari nama staf atau kod portfolio..." />
+
+  <table id="searchTable">
+    <thead>
+      <tr>
+        <th>Nama Staf</th>
+        <th>Kod Portfolio</th>
+        <th>Nama Jawatankuasa</th>
+        <th>Pemberat</th>
+        <th>Kategori</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
   <script>
+    let data = [];
+
     async function loadData() {
-      let response = await fetch("https://script.google.com/macros/s/AKfycbyqPy1dyWf1UTmwZ6oj_XpFf4h1Tq24yQLECTQlhjm76EMzsaAyJ9F1jkiBBNsiP5-nUw/exec");
-      let data = await response.json();
+      let response = await fetch("https://script.google.com/macros/s/AKfycbyERtoUECTrD-fyBXTUfbKc1PFHpcVuIFGAoVbaYymkQ5UVtsDmPSq_QRc4qeet_hp1kw/exec");
+      data = await response.json();
 
       let select = document.getElementById("staffSelect");
       select.innerHTML = "<option value=''>--Pilih Nama Staf--</option>";
@@ -26,25 +61,68 @@
         select.appendChild(option);
       });
 
-      select.onchange = function() {
-        let chosen = data.find(s => s.nama === this.value);
-        if (chosen) {
-          let details = `
-            <p><b>Nama:</b> ${chosen.nama}</p>
-            <p><b>Total Pemberat:</b> ${chosen.totalPemberat}</p>
-            <h3>Butiran Portfolio:</h3>
-            <ul>
-          `;
-          chosen.rekod.forEach(r => {
-            details += `<li>${r.kod} - ${r.portfolio} (${r.jawatan}) → Pemberat: ${r.pemberat}</li>`;
-          });
-          details += "</ul>";
+      select.onchange = showDetails;
+      document.getElementById("kategoriSelect").onchange = showDetails;
+      document.getElementById("searchInput").onkeyup = searchTable;
+    }
 
-          document.getElementById("result").innerHTML = details;
-        } else {
-          document.getElementById("result").innerHTML = "";
+    function showDetails() {
+      let staffName = document.getElementById("staffSelect").value;
+      let kategori = document.getElementById("kategoriSelect").value;
+      let chosen = data.find(s => s.nama === staffName);
+
+      if (chosen) {
+        let filtered = chosen.rekod;
+        if (kategori) {
+          filtered = filtered.filter(r => r.kategori.endsWith(kategori));
         }
-      };
+
+        let totalPemberat = filtered.reduce((sum, r) => sum + r.pemberat, 0);
+
+        let details = `
+          <p><b>Nama:</b> ${chosen.nama}</p>
+          <p><b>Bil Kod Portfolio:</b> ${filtered.length}</p>
+          <p><b>Total Pemberat:</b> ${totalPemberat}</p>
+          <h3>Butiran Portfolio:</h3>
+          <table>
+            <tr><th>Kod</th><th>Portfolio</th><th>Jawatan</th><th>Pemberat</th><th>Kategori</th></tr>
+        `;
+        filtered.forEach(r => {
+          details += `<tr>
+                        <td>${r.kod}</td>
+                        <td>${r.portfolio}</td>
+                        <td>${r.jawatan}</td>
+                        <td>${r.pemberat}</td>
+                        <td>${r.kategori}</td>
+                      </tr>`;
+        });
+        details += "</table>";
+
+        document.getElementById("result").innerHTML = details;
+      } else {
+        document.getElementById("result").innerHTML = "";
+      }
+    }
+
+    function searchTable() {
+      let query = document.getElementById("searchInput").value.toLowerCase();
+      let tbody = document.getElementById("searchTable").querySelector("tbody");
+      tbody.innerHTML = "";
+
+      data.forEach(staff => {
+        staff.rekod.forEach(r => {
+          if (staff.nama.toLowerCase().includes(query) || r.kod.toLowerCase().includes(query)) {
+            let row = `<tr>
+              <td>${staff.nama}</td>
+              <td>${r.kod}</td>
+              <td>${r.portfolio}</td>
+              <td>${r.pemberat}</td>
+              <td>${r.kategori}</td>
+            </tr>`;
+            tbody.innerHTML += row;
+          }
+        });
+      });
     }
 
     loadData();
