@@ -94,9 +94,9 @@
 <table id="jawatankuasaTable">
   <thead>
     <tr>
-      <th>JAWATAN</th>
-      <th>PEMBERAT</th>
-      <th>NAMA STAFF</th>
+      <th>JAWATAN (Column C)</th>
+      <th>PEMBERAT (Column D)</th>
+      <th>NAMA STAFF (Column F)</th>
     </tr>
   </thead>
   <tbody id="jawatankuasaTableBody"></tbody>
@@ -107,9 +107,6 @@
 const sheetURL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTKxmTXERKgk9gTUlqlyeRrmdfJU21FMdj1mDpf5azCa_hW4Gfg5TgpQcHvb-ujRo72cLIN2p0Lkgcj/pub?output=csv&gid=975658514';
 let sheetData = [];
 let selectedRowKategori = null;
-
-// Mapping dropdown value ke suffix
-const kategoriMap = { "PT": "PT", "ACC": "ACC", "QS": "QS", "ENG": "ENG", "PAM": "PAM" };
 
 // Fetch CSV & parse
 Papa.parse(sheetURL, {
@@ -208,7 +205,7 @@ document.getElementById('jawatankuasaDropdown').addEventListener('change', funct
     tbody.appendChild(tr);
   });
 
-  // Bilangan F group by B
+  // Bilangan unik NAMA STAFF (Column F)
   const uniqueF = new Set(filtered.map(r => r[5].trim()));
   document.getElementById('jawatankuasaCount').textContent = uniqueF.size;
 });
