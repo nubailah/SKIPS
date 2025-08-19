@@ -2,7 +2,7 @@
 <html lang="ms">
 <head>
 <meta charset="UTF-8">
-<title>Kategori Dropdown Interaktif dengan Cari</title>
+<title>Gabungan Kategori & Staf</title>
 <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 <style>
   table { border-collapse: collapse; width: 100%; margin-bottom: 20px; }
@@ -15,8 +15,14 @@
 <body>
 
 <h2>Filter Mengikut Kategori</h2>
-<input type="text" id="kategoriSearch" placeholder="Cari kategori (Column G)">
-<br><br>
+<select id="kategoriDropdown">
+  <option value="">-- Pilih Kategori --</option>
+  <option value="PT">Pentadbiran</option>
+  <option value="ACC">Perakaunan</option>
+  <option value="QS">Sains Kuantitatif</option>
+  <option value="ENG">Bahasa Inggeris</option>
+  <option value="PAM">Pengajian Am</option>
+</select>
 
 <h3>Ringkasan Column E</h3>
 <table id="kategoriTable">
@@ -29,7 +35,7 @@
   <tbody></tbody>
 </table>
 
-<h3>Detail Data</h3>
+<h3>Detail Data Kategori</h3>
 <table id="detailTable">
   <thead>
     <tr>
@@ -43,43 +49,64 @@
 </table>
 <p><strong>Jumlah Column D:</strong> <span id="detailSumD">0</span></p>
 
+<hr>
+
+<h2>Carian Staf (Column F)</h2>
+<select id="stafDropdown">
+  <option value="">-- Pilih Staf --</option>
+</select>
+<table id="stafTable">
+  <thead>
+    <tr>
+      <th>Column A</th>
+      <th>Column B</th>
+      <th>Column C</th>
+      <th>Column D</th>
+    </tr>
+  </thead>
+  <tbody id="stafTableBody"></tbody>
+</table>
+<p><strong>Jumlah Column D:</strong> <span id="stafSumD">0</span></p>
+
 <script>
 const sheetURL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTKxmTXERKgk9gTUlqlyeRrmdfJU21FMdj1mDpf5azCa_hW4Gfg5TgpQcHvb-ujRo72cLIN2p0Lkgcj/pub?output=csv&gid=975658514';
 let sheetData = [];
-let selectedRow = null;
+let selectedRowKategori = null;
 
-// Parse CSV dengan PapaParse
+// Mapping dropdown value ke suffix
+const kategoriMap = {
+  "PT": "PT",
+  "ACC": "ACC",
+  "QS": "QS",
+  "ENG": "ENG",
+  "PAM": "PAM"
+};
+
+// Fetch CSV & parse
 Papa.parse(sheetURL, {
   download: true,
   header: false,
   skipEmptyLines: true,
   complete: function(results) {
     sheetData = results.data;
-    displayKategori(''); // Papar semua awalnya
+    populateStafDropdown();
   }
 });
 
-// Event search box
-document.getElementById('kategoriSearch').addEventListener('input', function() {
-  const searchValue = this.value.trim().toUpperCase();
-  displayKategori(searchValue);
-});
-
-// Function paparkan ringkasan kategori
-function displayKategori(searchValue){
+// ====== KATEGORI SECTION ======
+document.getElementById('kategoriDropdown').addEventListener('change', function() {
+  const suffix = this.value;
   const tbody = document.querySelector('#kategoriTable tbody');
   tbody.innerHTML = '';
   document.querySelector('#detailTable tbody').innerHTML = '';
   document.getElementById('detailSumD').textContent = '0';
-  selectedRow = null;
+  selectedRowKategori = null;
 
-  // Filter berdasarkan Column G (index 6)
-  let filtered = sheetData;
-  if(searchValue){
-    filtered = sheetData.filter(r => (r[6] || '').toUpperCase().includes(searchValue));
-  }
+  if(!suffix) return;
 
-  // Group by Column E (index 4)
+  const filtered = sheetData.filter(r => r[4] && r[4].endsWith(suffix));
+
+  // Group by Column E
   const groupMap = {};
   filtered.forEach(r => {
     const key = r[4];
@@ -88,29 +115,26 @@ function displayKategori(searchValue){
     else groupMap[key] = val;
   });
 
-  // Sort menurun ikut jumlah D
   const sorted = Object.entries(groupMap).sort((a,b) => b[1]-a[1]);
 
   sorted.forEach(([colE, sumD]) => {
     const tr = document.createElement('tr');
     tr.innerHTML = `<td>${colE}</td><td>${sumD}</td>`;
     tr.addEventListener('click', () => {
-      if(selectedRow) selectedRow.classList.remove('selected');
+      if(selectedRowKategori) selectedRowKategori.classList.remove('selected');
       tr.classList.add('selected');
-      selectedRow = tr;
-      showDetail(colE);
+      selectedRowKategori = tr;
+      showDetailKategori(colE);
     });
     tbody.appendChild(tr);
   });
-}
+});
 
-// Function paparkan detail Column A-D untuk Column E terpilih
-function showDetail(colEValue){
+function showDetailKategori(colEValue){
   const detailRows = sheetData.filter(r => r[4] === colEValue);
   const tbody = document.querySelector('#detailTable tbody');
   tbody.innerHTML = '';
 
-  // Sort detail ikut Column D menurun
   const sortedRows = detailRows.sort((a,b) => parseFloat(b[3]||0) - parseFloat(a[3]||0));
 
   let sumD = 0;
@@ -126,6 +150,38 @@ function showDetail(colEValue){
   });
   document.getElementById('detailSumD').textContent = sumD;
 }
+
+// ====== STAF SECTION ======
+function populateStafDropdown(){
+  const stafDropdown = document.getElementById('stafDropdown');
+  const uniqueStaf = [...new Set(sheetData.map(r => r[5].trim()))];
+  uniqueStaf.forEach(staf => {
+    const option = document.createElement('option');
+    option.value = staf;
+    option.textContent = staf;
+    stafDropdown.appendChild(option);
+  });
+}
+
+document.getElementById('stafDropdown').addEventListener('change', function() {
+  const selected = this.value;
+  const filtered = sheetData.filter(r => r[5].trim() === selected);
+  const tbody = document.getElementById('stafTableBody');
+  tbody.innerHTML = '';
+
+  filtered.forEach(r => {
+    const tr = document.createElement('tr');
+    [0,1,2,3].forEach(i => {
+      const td = document.createElement('td');
+      td.textContent = r[i];
+      tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+  });
+
+  const sumD = filtered.reduce((acc,r) => acc + parseFloat(r[3] || 0), 0);
+  document.getElementById('stafSumD').textContent = sumD;
+});
 </script>
 </body>
 </html>
