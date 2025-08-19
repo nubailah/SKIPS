@@ -2,7 +2,7 @@
 <html lang="ms">
 <head>
 <meta charset="UTF-8">
-<title>Gabungan Kategori & Carian Jawatankuasa (Real-Time)</title>
+<title>Gabungan Kategori & Carian Jawatankuasa (Real-Time Stabil)</title>
 <style>
   body { font-family: Arial, sans-serif; margin: 20px; background-color: #f8f9fa; }
   h2 { color: #333; }
@@ -60,9 +60,11 @@
 <p><strong>BILANGAN NAMA STAFF:</strong> <span id="jawatankuasaCount">0</span></p>
 
 <script>
-const jsonURL = "https://script.google.com/macros/s/AKfycbzvfPYyyabKE0_gnAtfJO_f5HKxE2YB2q8a7s_cl-1eRIPt3EJFt4MI1ICGDublE8FNLA/exec"; // Gantikan dengan URL Apps Script Web App
+const jsonURL = "https://script.google.com/macros/s/AKfycbz75htm8VABm7yT6GDPO-GFiVjTeJNKVbMWP5jn6VVgkywZxaS5A9CcjBVOr2MY1HM0Hw/exec"; // Gantikan dengan Web App URL
 let sheetData = [];
-let selectedRowKategori = null;
+let selectedKategori = "";
+let selectedRowName = "";
+let selectedJawatankuasa = "";
 
 // ====== FETCH DATA REAL-TIME ======
 function fetchSheetJSON() {
@@ -71,10 +73,18 @@ function fetchSheetJSON() {
     .then(data => {
       sheetData = data;
       populateJawatankuasaDropdown();
-      const kategoriDropdown = document.getElementById("kategoriDropdown");
-      if(kategoriDropdown.value) kategoriDropdown.dispatchEvent(new Event("change"));
-      const jawatankuasaDropdown = document.getElementById("jawatankuasaDropdown");
-      if(jawatankuasaDropdown.value) jawatankuasaDropdown.dispatchEvent(new Event("change"));
+
+      // Restore kategori
+      if(selectedKategori) {
+        document.getElementById("kategoriDropdown").value = selectedKategori;
+        renderKategoriTable(selectedKategori, selectedRowName);
+      }
+
+      // Restore jawatankuasa
+      if(selectedJawatankuasa) {
+        document.getElementById("jawatankuasaDropdown").value = selectedJawatankuasa;
+        renderJawatankuasaTable(selectedJawatankuasa);
+      }
     })
     .catch(err => console.error("Fetch error:", err));
 }
@@ -85,17 +95,20 @@ setInterval(fetchSheetJSON, 5000);
 
 // ====== KATEGORI ======
 document.getElementById('kategoriDropdown').addEventListener('change', function() {
-  const suffix = this.value;
+  selectedKategori = this.value;
+  selectedRowName = "";
+  renderKategoriTable(selectedKategori);
+});
+
+function renderKategoriTable(suffix, highlightName="") {
   const tbody = document.querySelector('#kategoriTable tbody');
   tbody.innerHTML = '';
   document.querySelector('#detailTable tbody').innerHTML = '';
   document.getElementById('detailSumD').textContent = '0';
-  selectedRowKategori = null;
+  selectedRowName = highlightName;
+
   if(!suffix) return;
-
   const filtered = sheetData.filter(r => r.E && r.E.endsWith(suffix));
-
-  // Group by NAMA STAFF (Column E)
   const groupMap = {};
   filtered.forEach(r => {
     const key = r.E;
@@ -104,19 +117,20 @@ document.getElementById('kategoriDropdown').addEventListener('change', function(
   });
 
   const sorted = Object.entries(groupMap).sort((a,b) => b[1]-a[1]);
-
   sorted.forEach(([name,sum]) => {
     const tr = document.createElement('tr');
     tr.innerHTML = `<td>${name}</td><td>${sum}</td>`;
     tr.addEventListener('click', () => {
-      if(selectedRowKategori) selectedRowKategori.classList.remove('selected');
-      tr.classList.add('selected');
-      selectedRowKategori = tr;
+      selectedRowName = name;
+      renderKategoriTable(suffix, name);
       showDetailKategori(name);
     });
+    if(name === highlightName) tr.classList.add('selected');
     tbody.appendChild(tr);
   });
-});
+
+  if(highlightName) showDetailKategori(highlightName);
+}
 
 function showDetailKategori(name){
   const detailRows = sheetData.filter(r => r.E === name);
@@ -151,11 +165,14 @@ function populateJawatankuasaDropdown(){
 }
 
 document.getElementById('jawatankuasaDropdown').addEventListener('change', function() {
-  const selected = this.value;
-  const filtered = sheetData.filter(r => r.B.trim() === selected);
+  selectedJawatankuasa = this.value;
+  renderJawatankuasaTable(selectedJawatankuasa);
+});
+
+function renderJawatankuasaTable(jawatankuasa){
+  const filtered = sheetData.filter(r => r.B.trim() === jawatankuasa);
   const tbody = document.getElementById('jawatankuasaTableBody');
   tbody.innerHTML = '';
-
   filtered.forEach(r => {
     const tr = document.createElement('tr');
     ['C','D','F'].forEach(col => {
@@ -168,7 +185,7 @@ document.getElementById('jawatankuasaDropdown').addEventListener('change', funct
 
   const uniqueF = new Set(filtered.map(r => r.F.trim()));
   document.getElementById('jawatankuasaCount').textContent = uniqueF.size;
-});
+}
 </script>
 </body>
 </html>
