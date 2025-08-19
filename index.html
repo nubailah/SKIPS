@@ -1,83 +1,25 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ms">
 <head>
   <meta charset="UTF-8">
-  <title>Data Pemberat Staff</title>
-  <style>
-    body { font-family: Arial, sans-serif; margin: 20px; }
-    h1 { text-align: center; }
-    input { margin: 10px 0; padding: 8px; width: 300px; }
-    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-    th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
-    th { background-color: #f2f2f2; }
-    tr:hover { background-color: #f9f9f9; }
-  </style>
+  <title>Halaman Utama</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <h1>Senarai Jawatankuasa & Pemberat Staff</h1>
-
-  <input type="text" id="searchInput" placeholder="Cari nama staf..." onkeyup="filterTable()">
-
-  <table id="staffTable">
-    <thead>
-      <tr id="tableHeader"></tr>
-    </thead>
-    <tbody id="tableBody"></tbody>
-  </table>
-
-  <script>
-    const API_KEY = "AIzaSyDZ_H2MYtZHrAdxLGxYNUwrUcXUJRrrS34";
-    const SHEET_ID = "1uFVEYip6WQEOUugGXA48QkqqweU2dnFj7cFZaSqwvBM";
-    const RANGE = "ALL!A1:F100"; // adjust ikut column cikgu
-
-    async function loadData() {
-      try {
-        const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${RANGE}?key=${API_KEY}`;
-        const response = await fetch(url);
-        const data = await response.json();
-
-        if (!data.values) {
-          document.getElementById("tableBody").innerHTML = "<tr><td colspan='6'>Tiada data ditemui</td></tr>";
-          return;
-        }
-
-        // Header
-        const headers = data.values[0];
-        let headerHTML = "";
-        headers.forEach(h => headerHTML += `<th>${h}</th>`);
-        document.getElementById("tableHeader").innerHTML = headerHTML;
-
-        // Rows
-        let rowsHTML = "";
-        data.values.slice(1).forEach(row => {
-          rowsHTML += "<tr>";
-          headers.forEach((_, i) => {
-            rowsHTML += `<td>${row[i] || ""}</td>`;
-          });
-          rowsHTML += "</tr>";
-        });
-
-        document.getElementById("tableBody").innerHTML = rowsHTML;
-
-      } catch (error) {
-        console.error("Error:", error);
-      }
-    }
-
-    // Search filter
-    function filterTable() {
-      const input = document.getElementById("searchInput").value.toLowerCase();
-      const rows = document.querySelectorAll("#tableBody tr");
-
-      rows.forEach(row => {
-        const text = row.innerText.toLowerCase();
-        row.style.display = text.includes(input) ? "" : "none";
-      });
-    }
-
-    // Auto refresh every 10s
-    loadData();
-    setInterval(loadData, 10000);
-  </script>
+  <header>
+    <h1>Sistem Pemberat Staf</h1>
+  </header>
+  <nav>
+    <ul>
+      <li><a href="index.html">Halaman Utama</a></li>
+      <li><a href="staff.html">Senarai Staf</a></li>
+      <li><a href="laporan.html">Laporan</a></li>
+    </ul>
+  </nav>
+  <main>
+    <h2>Selamat Datang</h2>
+    <p>Ini adalah laman utama sistem pemberat staf.</p>
+  </main>
 </body>
 </html>
+
