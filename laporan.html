@@ -4,6 +4,24 @@
   <meta charset="UTF-8">
   <title>Laporan</title>
   <link rel="stylesheet" href="style.css">
+  <style>
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      margin-top: 20px;
+    }
+    table, th, td {
+      border: 1px solid #ddd;
+      padding: 8px;
+    }
+    th {
+      background: #0073e6;
+      color: white;
+    }
+    tr:nth-child(even) {
+      background: #f2f2f2;
+    }
+  </style>
 </head>
 <body>
   <header>
@@ -18,8 +36,48 @@
   </nav>
   <main>
     <h2>Ringkasan Laporan</h2>
-    <p>Bahagian laporan akan ditambah kemudian.</p>
+    <p>Data laporan akan dipaparkan secara automatik dari Google Sheets:</p>
+    <table id="laporanTable">
+      <thead></thead>
+      <tbody></tbody>
+    </table>
   </main>
+
+  <script>
+    // Ganti link di bawah dengan link publish CSV dari Google Sheets
+    const sheetUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-xxxx/pub?output=csv";
+
+    async function loadData() {
+      const response = await fetch(sheetUrl);
+      const data = await response.text();
+
+      const rows = data.split("\n").map(r => r.split(","));
+      const table = document.getElementById("laporanTable");
+
+      // clear table
+      table.querySelector("thead").innerHTML = "";
+      table.querySelector("tbody").innerHTML = "";
+
+      // header
+      let headerRow = "<tr>";
+      rows[0].forEach(h => headerRow += `<th>${h}</th>`);
+      headerRow += "</tr>";
+      table.querySelector("thead").innerHTML = headerRow;
+
+      // body
+      rows.slice(1).forEach(r => {
+        let rowHtml = "<tr>";
+        r.forEach(c => rowHtml += `<td>${c}</td>`);
+        rowHtml += "</tr>";
+        table.querySelector("tbody").innerHTML += rowHtml;
+      });
+    }
+
+    loadData();
+    // Auto-refresh setiap 30 saat
+    setInterval(loadData, 30000);
+  </script>
 </body>
 </html>
+
 
