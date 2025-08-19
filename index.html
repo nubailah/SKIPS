@@ -108,16 +108,36 @@ const sheetURL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTKxmTXERKgk9g
 let sheetData = [];
 let selectedRowKategori = null;
 
-// Fetch CSV & parse
-Papa.parse(sheetURL, {
-  download: true,
-  header: false,
-  skipEmptyLines: true,
-  complete: function(results) {
-    sheetData = results.data;
-    populateJawatankuasaDropdown();
-  }
-});
+// ====== FETCH DATA FUNCTION ======
+function fetchSheetData() {
+  Papa.parse(sheetURL, {
+    download: true,
+    header: false,
+    skipEmptyLines: true,
+    complete: function(results) {
+      sheetData = results.data;
+      populateJawatankuasaDropdown(); // Update dropdown
+
+      // Refresh kategori table jika ada pilihan
+      const kategoriDropdown = document.getElementById('kategoriDropdown');
+      if(kategoriDropdown.value) {
+        kategoriDropdown.dispatchEvent(new Event('change'));
+      }
+
+      // Refresh jawatankuasa table jika ada pilihan
+      const jawatankuasaDropdown = document.getElementById('jawatankuasaDropdown');
+      if(jawatankuasaDropdown.value) {
+        jawatankuasaDropdown.dispatchEvent(new Event('change'));
+      }
+    }
+  });
+}
+
+// Panggil fetch semasa load
+fetchSheetData();
+
+// Auto-refresh setiap 30 saat
+setInterval(fetchSheetData, 30000);
 
 // ====== KATEGORI SECTION ======
 document.getElementById('kategoriDropdown').addEventListener('change', function() {
@@ -181,6 +201,7 @@ function showDetailKategori(name){
 function populateJawatankuasaDropdown(){
   const dropdown = document.getElementById('jawatankuasaDropdown');
   const uniqueValues = [...new Set(sheetData.map(r => r[1].trim()))]; // Column B
+  dropdown.innerHTML = '<option value="">-- Pilih Jawatankuasa --</option>'; // Reset options
   uniqueValues.forEach(val => {
     const option = document.createElement('option');
     option.value = val;
