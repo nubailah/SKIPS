@@ -1,120 +1,148 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <title>Laporan Jawatankuasa</title>
+  <title>Laporan Portfolio</title>
   <style>
-    body { font-family: Arial, sans-serif; margin: 20px; }
-    table { border-collapse: collapse; width: 100%; margin-top: 20px; }
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    table { border-collapse: collapse; width: 100%; margin-top: 15px; }
     th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
     th { background: #f2f2f2; }
-    select, input { padding: 6px; margin: 5px 0; }
+    select, input { padding: 6px; margin: 8px 0; }
   </style>
 </head>
 <body>
-  <h2>Laporan Jawatankuasa</h2>
-
-  <!-- Dropdown kategori -->
-  <label for="kategori">Pilih Kategori:</label>
-  <select id="kategori">
-    <option value="">-- Semua --</option>
-    <option value="PT">Pentadbiran (PT)</option>
-    <option value="PAM">Pengajian Am (PAM)</option>
-    <option value="QA">Sains Kuantitatif (QA)</option>
-    <option value="ACC">Perakaunan (ACC)</option>
+  <h2>Laporan Mengikut Kategori</h2>
+  <label>Pilih Kategori:</label>
+  <select id="kategoriDropdown" onchange="filterKategori()">
+    <option value="">--Pilih--</option>
+    <option value="PT">Pentadbiran</option>
+    <option value="PAM">Pengajian Am</option>
+    <option value="QA">Sains Kuantitatif</option>
+    <option value="ACC">Perakaunan</option>
   </select>
 
-  <!-- Combobox staf -->
-  <label for="staf">Cari Nama Staf:</label>
-  <select id="staf">
-    <option value="">-- Pilih Staf --</option>
-  </select>
+  <table id="kategoriTable">
+    <thead>
+      <tr>
+        <th>Nama Staf</th>
+        <th>Kod Portfolio</th>
+        <th>Nama Portfolio</th>
+        <th>Jawatan</th>
+        <th>Pemberat</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
 
-  <table id="data-table">
+  <h3>Jumlah Pemberat Mengikut Staf</h3>
+  <table id="jumlahTable">
+    <thead>
+      <tr>
+        <th>Nama Staf</th>
+        <th>Bil Kod Portfolio</th>
+        <th>Jumlah Pemberat</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <hr>
+  <h2>Carian Mengikut Nama Staf</h2>
+  <input type="text" id="searchNama" list="namaList" placeholder="Taip nama staf..." onchange="searchStaf()"/>
+  <datalist id="namaList"></datalist>
+
+  <table id="stafTable">
     <thead>
       <tr>
         <th>Kod Portfolio</th>
         <th>Nama Portfolio</th>
         <th>Jawatan</th>
         <th>Pemberat</th>
-        <th>Kategori (E)</th>
-        <th>Nama Staf</th>
       </tr>
     </thead>
     <tbody></tbody>
-    <tfoot>
-      <tr>
-        <td colspan="3"><strong>Jumlah Pemberat</strong></td>
-        <td id="total-pemberat"></td>
-        <td colspan="2"><strong>Bil Kod Portfolio:</strong> <span id="bil-portfolio"></span></td>
-      </tr>
-    </tfoot>
   </table>
 
-  <script>
-    const apiUrl = "https://script.google.com/macros/s/AKfycbyERtoUECTrD-fyBXTUfbKc1PFHpcVuIFGAoVbaYymkQ5UVtsDmPSq_QRc4qeet_hp1kw/exec";
+  <h3>Ringkasan Staf</h3>
+  <p><b>Bilangan Kod Portfolio:</b> <span id="bilKod"></span></p>
+  <p><b>Jumlah Pemberat:</b> <span id="jumlahPemberat"></span></p>
 
+  <script>
     let allData = [];
+    const url = "https://script.google.com/macros/s/AKfycbyERtoUECTrD-fyBXTUfbKc1PFHpcVuIFGAoVbaYymkQ5UVtsDmPSq_QRc4qeet_hp1kw/exec";
 
     async function fetchData() {
-      const res = await fetch(apiUrl);
+      const res = await fetch(url);
       allData = await res.json();
-      populateStafCombo();
-      renderTable();
-    }
 
-    function populateStafCombo() {
-      const stafSelect = document.getElementById("staf");
-      const uniqueStaf = [...new Set(allData.map(r => r[5]))]; // Column F = Nama Staf
-      uniqueStaf.forEach(staf => {
-        if (staf) {
-          let opt = document.createElement("option");
-          opt.value = staf;
-          opt.textContent = staf;
-          stafSelect.appendChild(opt);
-        }
+      // isi combobox nama staf
+      let stafSet = [...new Set(allData.map(r => r.NamaStaf))];
+      let namaList = document.getElementById("namaList");
+      stafSet.forEach(n => {
+        let opt = document.createElement("option");
+        opt.value = n;
+        namaList.appendChild(opt);
       });
     }
 
-    function renderTable() {
-      const kategori = document.getElementById("kategori").value;
-      const staf = document.getElementById("staf").value;
-      const tbody = document.querySelector("#data-table tbody");
+    function filterKategori() {
+      let kategori = document.getElementById("kategoriDropdown").value;
+      let filtered = allData.filter(r => r.KodPortfolio.endsWith(kategori));
+
+      // table detail
+      let tbody = document.querySelector("#kategoriTable tbody");
       tbody.innerHTML = "";
-
-      let filtered = allData;
-
-      // filter ikut kategori (Column E = index 4)
-      if (kategori) {
-        filtered = filtered.filter(r => r[4] && r[4].endsWith(kategori));
-      }
-
-      // filter ikut staf
-      if (staf) {
-        filtered = filtered.filter(r => r[5] === staf);
-      }
-
-      let total = 0;
       filtered.forEach(r => {
-        const row = document.createElement("tr");
-        row.innerHTML = `
-          <td>${r[0]}</td>
-          <td>${r[1]}</td>
-          <td>${r[2]}</td>
-          <td>${r[3]}</td>
-          <td>${r[4]}</td>
-          <td>${r[5]}</td>
-        `;
-        tbody.appendChild(row);
-        total += Number(r[3]) || 0;
+        let tr = `<tr>
+          <td>${r.NamaStaf}</td>
+          <td>${r.KodPortfolio}</td>
+          <td>${r.NamaPortfolio}</td>
+          <td>${r.Jawatan}</td>
+          <td>${r.Pemberat}</td>
+        </tr>`;
+        tbody.innerHTML += tr;
       });
 
-      document.getElementById("total-pemberat").textContent = total;
-      document.getElementById("bil-portfolio").textContent = filtered.length;
+      // jumlah pemberat ikut staf
+      let sumMap = {};
+      filtered.forEach(r => {
+        if (!sumMap[r.NamaStaf]) sumMap[r.NamaStaf] = { bil: 0, total: 0 };
+        sumMap[r.NamaStaf].bil++;
+        sumMap[r.NamaStaf].total += Number(r.Pemberat);
+      });
+
+      let tbody2 = document.querySelector("#jumlahTable tbody");
+      tbody2.innerHTML = "";
+      for (let staf in sumMap) {
+        tbody2.innerHTML += `<tr>
+          <td>${staf}</td>
+          <td>${sumMap[staf].bil}</td>
+          <td>${sumMap[staf].total}</td>
+        </tr>`;
+      }
     }
 
-    document.getElementById("kategori").addEventListener("change", renderTable);
-    document.getElementById("staf").addEventListener("change", renderTable);
+    function searchStaf() {
+      let nama = document.getElementById("searchNama").value;
+      let filtered = allData.filter(r => r.NamaStaf === nama);
+
+      let tbody = document.querySelector("#stafTable tbody");
+      tbody.innerHTML = "";
+      let bil = 0, total = 0;
+      filtered.forEach(r => {
+        bil++;
+        total += Number(r.Pemberat);
+        tbody.innerHTML += `<tr>
+          <td>${r.KodPortfolio}</td>
+          <td>${r.NamaPortfolio}</td>
+          <td>${r.Jawatan}</td>
+          <td>${r.Pemberat}</td>
+        </tr>`;
+      });
+
+      document.getElementById("bilKod").innerText = bil;
+      document.getElementById("jumlahPemberat").innerText = total;
+    }
 
     fetchData();
   </script>
