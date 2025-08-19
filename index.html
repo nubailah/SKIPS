@@ -13,7 +13,7 @@
 
   <script>
     async function loadData() {
-      let response = await fetch("https://script.google.com/macros/s/AKfycbyB51yXVYq6pcRvePVPMgYAxhvlp86_PyC4WPvnCJM_iX8V08ePbWAbuv1MusQO4NiMFA/exec");
+      let response = await fetch("https://script.google.com/macros/s/AKfycbyqPy1dyWf1UTmwZ6oj_XpFf4h1Tq24yQLECTQlhjm76EMzsaAyJ9F1jkiBBNsiP5-nUw/exec");
       let data = await response.json();
 
       let select = document.getElementById("staffSelect");
@@ -29,13 +29,18 @@
       select.onchange = function() {
         let chosen = data.find(s => s.nama === this.value);
         if (chosen) {
-          document.getElementById("result").innerHTML = `
+          let details = `
             <p><b>Nama:</b> ${chosen.nama}</p>
-            <p><b>Kod Portfolio:</b> ${chosen.kod}</p>
-            <p><b>Nama Portfolio:</b> ${chosen.portfolio}</p>
-            <p><b>Jawatan:</b> ${chosen.jawatan}</p>
-            <p><b>Pemberat:</b> ${chosen.pemberat}</p>
+            <p><b>Total Pemberat:</b> ${chosen.totalPemberat}</p>
+            <h3>Butiran Portfolio:</h3>
+            <ul>
           `;
+          chosen.rekod.forEach(r => {
+            details += `<li>${r.kod} - ${r.portfolio} (${r.jawatan}) → Pemberat: ${r.pemberat}</li>`;
+          });
+          details += "</ul>";
+
+          document.getElementById("result").innerHTML = details;
         } else {
           document.getElementById("result").innerHTML = "";
         }
