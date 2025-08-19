@@ -1,40 +1,102 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="utf-8">
-  <title>Form Input</title>
+  <title>Google Sheet Data Display</title>
 </head>
 <body>
-  <h2>Hantar Data ke Google Sheet</h2>
-  <form id="myForm">
-    <label>Nama:</label><br>
-    <input type="text" id="nama" required><br>
-    <label>Email:</label><br>
-    <input type="email" id="email" required><br>
-    <label>Mesej:</label><br>
-    <textarea id="mesej" required></textarea><br><br>
-    <button type="submit">Hantar</button>
-  </form>
+  <h2>Filter Mengikut Kategori (Column G)</h2>
+  <select id="kategoriDropdown">
+    <option value="">-- Pilih Kategori --</option>
+  </select>
+  <p><strong>Column E untuk kategori dipilih:</strong> <span id="columnE"></span></p>
+  <p><strong>Jumlah Column D:</strong> <span id="sumD"></span></p>
+
+  <hr>
+
+  <h2>Carian Staf (Column G)</h2>
+  <select id="stafDropdown">
+    <option value="">-- Pilih Staf --</option>
+  </select>
+  <table border="1">
+    <thead>
+      <tr>
+        <th>Column A</th>
+        <th>Column B</th>
+        <th>Column C</th>
+        <th>Column D</th>
+      </tr>
+    </thead>
+    <tbody id="stafTableBody"></tbody>
+  </table>
+  <p><strong>Jumlah Column D:</strong> <span id="stafSumD"></span></p>
 
   <script>
-    const form = document.getElementById("myForm");
-    form.addEventListener("submit", function(e){
-      e.preventDefault();
-      const data = new URLSearchParams();
-      data.append("nama", document.getElementById("nama").value);
-      data.append("email", document.getElementById("email").value);
-      data.append("mesej", document.getElementById("mesej").value);
+    // Link Google Sheet published as CSV
+    const sheetURL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTKxmTXERKgk9gTUlqlyeRrmdfJU21FMdj1mDpf5azCa_hW4Gfg5TgpQcHvb-ujRo72cLIN2p0Lkgcj/pub?output=csv&gid=975658514';
 
-      fetch("https://script.google.com/macros/s/AKfycbyYAhQfhTzWF5Q-6RQQ9wANxGnbImBw_zouX4ayEQWXU9H2TUI1WjwmyELmaWgCWP4zkQ/exec", {  // ganti dengan Web App URL awak
-        method: "POST",
-        body: data
-      })
+    let sheetData = [];
+
+    fetch(sheetURL)
       .then(response => response.text())
-      .then(result => alert(result))
-      .catch(error => alert("Gagal hantar data: " + error));
+      .then(data => {
+        const rows = data.split('\n').map(r => r.split(','));
+        const headers = rows[0];
+        sheetData = rows.slice(1);
+
+        // Populate kategori dropdown (unique values from Column G, index 6)
+        const kategoriDropdown = document.getElementById('kategoriDropdown');
+        const uniqueKategori = [...new Set(sheetData.map(r => r[6]))];
+        uniqueKategori.forEach(k => {
+          const option = document.createElement('option');
+          option.value = k;
+          option.textContent = k;
+          kategoriDropdown.appendChild(option);
+        });
+
+        // Populate staf dropdown (Column G)
+        const stafDropdown = document.getElementById('stafDropdown');
+        uniqueKategori.forEach(k => {
+          const option = document.createElement('option');
+          option.value = k;
+          option.textContent = k;
+          stafDropdown.appendChild(option);
+        });
+      });
+
+    // Event for kategori dropdown
+    document.getElementById('kategoriDropdown').addEventListener('change', function() {
+      const selected = this.value;
+      const filtered = sheetData.filter(r => r[6] === selected);
+
+      // Column E (index 4)
+      const columnEValues = filtered.map(r => r[4]).join(', ');
+      document.getElementById('columnE').textContent = columnEValues;
+
+      // Sum Column D (index 3)
+      const sumD = filtered.reduce((acc, r) => acc + parseFloat(r[3] || 0), 0);
+      document.getElementById('sumD').textContent = sumD;
+    });
+
+    // Event for staf dropdown
+    document.getElementById('stafDropdown').addEventListener('change', function() {
+      const selected = this.value;
+      const filtered = sheetData.filter(r => r[6] === selected);
+
+      const tbody = document.getElementById('stafTableBody');
+      tbody.innerHTML = '';
+      filtered.forEach(r => {
+        const tr = document.createElement('tr');
+        [0,1,2,3].forEach(i => {
+          const td = document.createElement('td');
+          td.textContent = r[i];
+          tr.appendChild(td);
+        });
+        tbody.appendChild(tr);
+      });
+
+      const sumD = filtered.reduce((acc, r) => acc + parseFloat(r[3] || 0), 0);
+      document.getElementById('stafSumD').textContent = sumD;
     });
   </script>
 </body>
 </html>
-
-
