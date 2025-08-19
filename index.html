@@ -1,96 +1,39 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <base target="_top">
+  <meta charset="utf-8">
+  <title>Form Input</title>
 </head>
 <body>
-  <h2>Filter Mengikut Kategori</h2>
-  <select id="kategoriDropdown" onchange="loadKategori()">
-    <option value="">-- Pilih Kategori --</option>
-    <option value="PT">Pentadbiran (PT)</option>
-    <option value="PAM">Pengajian Am (PAM)</option>
-    <option value="QA">Sains Kuantitatif (QA)</option>
-    <option value="ACC">Perakaunan (ACC)</option>
-  </select>
-
-  <div id="kategoriOutput"></div>
-
-  <hr>
-
-  <h2>Carian Mengikut Nama Staf</h2>
-  <select id="stafDropdown" onchange="searchStaff()"></select>
-  <div id="staffOutput"></div>
+  <h2>Hantar Data ke Google Sheet</h2>
+  <form id="myForm">
+    <label>Nama:</label><br>
+    <input type="text" id="nama" required><br>
+    <label>Email:</label><br>
+    <input type="email" id="email" required><br>
+    <label>Mesej:</label><br>
+    <textarea id="mesej" required></textarea><br><br>
+    <button type="submit">Hantar</button>
+  </form>
 
   <script>
-    // Gantikan dengan Web App URL awak
-    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzMPBtdBxuXVlkURbNKgG-OuRXf60v3QSk-10PA-K6K_D8ik8jG3nQ8qkpXRQ9lyMSALQ/exec";
+    const form = document.getElementById("myForm");
+    form.addEventListener("submit", function(e){
+      e.preventDefault();
+      const data = new URLSearchParams();
+      data.append("nama", document.getElementById("nama").value);
+      data.append("email", document.getElementById("email").value);
+      data.append("mesej", document.getElementById("mesej").value);
 
-    // Load kategori
-    function loadKategori() {
-      let kategori = document.getElementById("kategoriDropdown").value;
-      if (!kategori) return;
-
-      fetch(`${WEB_APP_URL}?action=getKategoriData&kategori=${kategori}`)
-        .then(res => res.json())
-        .then(data => displayKategori(data))
-        .catch(err => console.error(err));
-    }
-
-    // Papar kategori
-    function displayKategori(data) {
-      let html = "<h3>Ringkasan</h3><table border='1'><tr><th>Nama Staf</th><th>Bil Kod</th><th>Jumlah Pemberat</th></tr>";
-      for (let staf in data.summary) {
-        html += `<tr><td>${staf}</td><td>${data.summary[staf].bilKod}</td><td>${data.summary[staf].totalPemberat}</td></tr>`;
-      }
-      html += "</table>";
-
-      html += "<h3>Butiran</h3><table border='1'><tr><th>Kod</th><th>Portfolio</th><th>Jawatan</th><th>Pemberat</th><th>Staf</th></tr>";
-      data.details.forEach(d => {
-        html += `<tr><td>${d.kod}</td><td>${d.namaPortfolio}</td><td>${d.jawatan}</td><td>${d.pemberat}</td><td>${d.staf}</td></tr>`;
-      });
-      html += "</table>";
-
-      document.getElementById("kategoriOutput").innerHTML = html;
-    }
-
-    // Load semua staf
-    function loadStaff() {
-      fetch(`${WEB_APP_URL}?action=getAllStaff`)
-        .then(res => res.json())
-        .then(staffList => {
-          let dropdown = document.getElementById("stafDropdown");
-          dropdown.innerHTML = "<option value=''>-- Pilih Staf --</option>";
-          staffList.forEach(s => {
-            dropdown.innerHTML += `<option value="${s}">${s}</option>`;
-          });
-        })
-        .catch(err => console.error(err));
-    }
-
-    // Cari staf
-    function searchStaff() {
-      let staf = document.getElementById("stafDropdown").value;
-      if (!staf) return;
-
-      fetch(`${WEB_APP_URL}?action=searchStaff&staf=${staf}`)
-        .then(res => res.json())
-        .then(data => displayStaff(data))
-        .catch(err => console.error(err));
-    }
-
-    function displayStaff(data) {
-      let html = `<h3>Butiran ${data.details[0]?.staf || ""}</h3>`;
-      html += `<p>Bil Kod: ${data.bilKod}, Jumlah Pemberat: ${data.totalPemberat}</p>`;
-      html += "<table border='1'><tr><th>Kod</th><th>Portfolio</th><th>Jawatan</th><th>Pemberat</th><th>Kategori</th></tr>";
-      data.details.forEach(d => {
-        html += `<tr><td>${d.kod}</td><td>${d.namaPortfolio}</td><td>${d.jawatan}</td><td>${d.pemberat}</td><td>${d.kategori}</td></tr>`;
-      });
-      html += "</table>";
-
-      document.getElementById("staffOutput").innerHTML = html;
-    }
-
-    window.onload = loadStaff;
+      fetch("https://script.google.com/macros/s/AKfycbze2RqD2q6vy5MA44S6myikjEnmcqwpvB4D9dmHBDaNe3ZBJMKDW1rBU3GRTA6n0o330w/exec", {  // ganti dengan Web App URL awak
+        method: "POST",
+        body: data
+      })
+      .then(response => response.text())
+      .then(result => alert(result))
+      .catch(error => alert("Gagal hantar data: " + error));
+    });
   </script>
 </body>
 </html>
+
