@@ -1,22 +1,30 @@
 <!DOCTYPE html>
-<html>
+<html lang="ms">
 <head>
-  <title>Google Sheet Data Display</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Paparan Data Google Sheets</title>
 </head>
 <body>
-  <h2>Filter Mengikut Kategori (Column G)</h2>
+  <h2>Filter Mengikut Kategori</h2>
   <select id="kategoriDropdown">
     <option value="">-- Pilih Kategori --</option>
+    <option value="Pentadbiran">Pentadbiran</option>
+    <option value="Perakaunan">Perakaunan</option>
+    <option value="Sains Kuantitatif">Sains Kuantitatif</option>
+    <option value="Bahasa Inggeris">Bahasa Inggeris</option>
+    <option value="Pengajian Am">Pengajian Am</option>
   </select>
-  <p><strong>Column E untuk kategori dipilih:</strong> <span id="columnE"></span></p>
-  <p><strong>Jumlah Column D:</strong> <span id="sumD"></span></p>
+
+  <div id="kategoriResult"></div>
 
   <hr>
 
-  <h2>Carian Staf (Column G)</h2>
+  <h2>Carian Staf</h2>
   <select id="stafDropdown">
     <option value="">-- Pilih Staf --</option>
   </select>
+
   <table border="1">
     <thead>
       <tr>
@@ -28,56 +36,62 @@
     </thead>
     <tbody id="stafTableBody"></tbody>
   </table>
-  <p><strong>Jumlah Column D:</strong> <span id="stafSumD"></span></p>
+  <p><strong>Jumlah Column D:</strong> <span id="stafSumD">0</span></p>
 
   <script>
-    // Link Google Sheet published as CSV
-    const sheetURL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTKxmTXERKgk9gTUlqlyeRrmdfJU21FMdj1mDpf5azCa_hW4Gfg5TgpQcHvb-ujRo72cLIN2p0Lkgcj/pub?gid=975658514&single=true&output=csv';
-
+    const sheetURL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTKxmTXERKgk9gTUlqlyeRrmdfJU21FMdj1mDpf5azCa_hW4Gfg5TgpQcHvb-ujRo72cLIN2p0Lkgcj/pub?output=csv&gid=975658514';
     let sheetData = [];
 
+    // Mapping kategori → suffix Column E
+    const kategoriMap = {
+      "Pentadbiran": "PT",
+      "Perakaunan": "ACC",
+      "Sains Kuantitatif": "QS",
+      "Bahasa Inggeris": "ENG",
+      "Pengajian Am": "PAM"
+    };
+
     fetch(sheetURL)
-      .then(response => response.text())
+      .then(res => res.text())
       .then(data => {
-        const rows = data.split('\n').map(r => r.split(','));
-        const headers = rows[0];
-        sheetData = rows.slice(1);
+        sheetData = data.split('\n').map(r => r.split(','));
 
-        // Populate kategori dropdown (unique values from Column G, index 6)
-        const kategoriDropdown = document.getElementById('kategoriDropdown');
-        const uniqueKategori = [...new Set(sheetData.map(r => r[6]))];
-        uniqueKategori.forEach(k => {
-          const option = document.createElement('option');
-          option.value = k;
-          option.textContent = k;
-          kategoriDropdown.appendChild(option);
-        });
-
-        // Populate staf dropdown (Column G)
+        // Populate staf dropdown (unique Column G)
         const stafDropdown = document.getElementById('stafDropdown');
-        uniqueKategori.forEach(k => {
+        const uniqueStaf = [...new Set(sheetData.map(r => r[6]))];
+        uniqueStaf.forEach(staf => {
           const option = document.createElement('option');
-          option.value = k;
-          option.textContent = k;
+          option.value = staf;
+          option.textContent = staf;
           stafDropdown.appendChild(option);
         });
       });
 
-    // Event for kategori dropdown
+    // Event kategori dropdown
     document.getElementById('kategoriDropdown').addEventListener('change', function() {
       const selected = this.value;
-      const filtered = sheetData.filter(r => r[6] === selected);
+      const suffix = kategoriMap[selected];
+      if (!suffix) return;
 
-      // Column E (index 4)
-      const columnEValues = filtered.map(r => r[4]).join(', ');
-      document.getElementById('columnE').textContent = columnEValues;
+      const filtered = sheetData.filter(r => r[4] && r[4].endsWith(suffix));
 
-      // Sum Column D (index 3)
-      const sumD = filtered.reduce((acc, r) => acc + parseFloat(r[3] || 0), 0);
-      document.getElementById('sumD').textContent = sumD;
+      // Group by Column E and sum Column D
+      const groupMap = {};
+      filtered.forEach(r => {
+        const key = r[4];
+        const val = parseFloat(r[3] || 0);
+        if (groupMap[key]) groupMap[key] += val;
+        else groupMap[key] = val;
+      });
+
+      // Display
+      const resultDiv = document.getElementById('kategoriResult');
+      resultDiv.innerHTML = '<ul>' +
+        Object.entries(groupMap).map(([k, v]) => `<li>${k}: ${v}</li>`).join('') +
+        '</ul>';
     });
 
-    // Event for staf dropdown
+    // Event staf dropdown
     document.getElementById('stafDropdown').addEventListener('change', function() {
       const selected = this.value;
       const filtered = sheetData.filter(r => r[6] === selected);
@@ -86,7 +100,7 @@
       tbody.innerHTML = '';
       filtered.forEach(r => {
         const tr = document.createElement('tr');
-        [0,1,2,3].forEach(i => {
+        [0, 1, 2, 3].forEach(i => {
           const td = document.createElement('td');
           td.textContent = r[i];
           tr.appendChild(td);
@@ -94,10 +108,10 @@
         tbody.appendChild(tr);
       });
 
+      // Sum Column D group by Column G (for selected staff)
       const sumD = filtered.reduce((acc, r) => acc + parseFloat(r[3] || 0), 0);
       document.getElementById('stafSumD').textContent = sumD;
     });
   </script>
 </body>
 </html>
-
