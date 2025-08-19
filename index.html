@@ -33,36 +33,48 @@
   </table>
 
   <script>
-    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyB51yXVYq6pcRvePVPMgYAxhvlp86_PyC4WPvnCJM_iX8V08ePbWAbuv1MusQO4NiMFA/exec"; // ganti dgn URL Apps Script
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyB51yXVYq6pcRvePVPMgYAxhvlp86_PyC4WPvnCJM_iX8V08ePbWAbuv1MusQO4NiMFA/exec";
 
     let allData = [];
+    let currentName = "";
 
     // Ambil data dari Google Sheets
     async function loadData() {
-      const res = await fetch(APPS_SCRIPT_URL);
-      allData = await res.json();
+      try {
+        const res = await fetch(APPS_SCRIPT_URL);
+        allData = await res.json();
 
-      // Isi dropdown dengan senarai Nama Staf
-      const staffSelect = document.getElementById("staffSelect");
-      let names = [...new Set(allData.map(row => row["Nama Staf"]))]; // buang duplicate
-      names.forEach(name => {
-        let option = document.createElement("option");
-        option.value = name;
-        option.textContent = name;
-        staffSelect.appendChild(option);
-      });
+        // Isi dropdown (sekali sahaja bila kosong)
+        const staffSelect = document.getElementById("staffSelect");
+        if (staffSelect.options.length <= 1) {
+          let names = [...new Set(allData.map(row => row["Nama Staf"]))]; // buang duplicate
+          names.forEach(name => {
+            let option = document.createElement("option");
+            option.value = name;
+            option.textContent = name;
+            staffSelect.appendChild(option);
+          });
+        }
+
+        // Kalau ada nama sedang dipilih, update table automatik
+        if (currentName) {
+          showStaffData(currentName);
+        }
+
+      } catch (err) {
+        console.error("Gagal ambil data:", err);
+      }
     }
 
-    // Bila pilih staf dari combo box
-    document.getElementById("staffSelect").addEventListener("change", function() {
-      const selectedName = this.value;
+    // Papar data staf dalam jadual
+    function showStaffData(name) {
       const resultBody = document.getElementById("resultBody");
       const resultTable = document.getElementById("resultTable");
 
       resultBody.innerHTML = "";
 
-      if (selectedName) {
-        const staffData = allData.filter(row => row["Nama Staf"] === selectedName);
+      if (name) {
+        const staffData = allData.filter(row => row["Nama Staf"] === name);
 
         staffData.forEach(row => {
           let tr = document.createElement("tr");
@@ -78,11 +90,19 @@
       } else {
         resultTable.style.display = "none";
       }
+    }
+
+    // Bila pilih staf dari combo box
+    document.getElementById("staffSelect").addEventListener("change", function() {
+      currentName = this.value;
+      showStaffData(currentName);
     });
 
-    // Load data bila page buka
+    // Mula load data
     loadData();
+
+    // Auto refresh setiap 1 saat
+    setInterval(loadData, 1000);
   </script>
 </body>
 </html>
-
