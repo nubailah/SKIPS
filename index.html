@@ -1,191 +1,45 @@
 <!DOCTYPE html>
-<html lang="ms">
+<html>
 <head>
-  <meta charset="UTF-8" />
-  <title>Senarai Staf (Combo Box + Auto Refresh)</title>
-  <style>
-    body { font-family: Arial, sans-serif; margin: 20px; }
-    label, select { font-size: 14px; }
-    select { padding: 6px 8px; margin-left: 8px; }
-    .status { margin-top: 10px; font-size: 12px; color: #666; }
-    table { border-collapse: collapse; width: 100%; margin-top: 14px; }
-    th, td { border: 1px solid #ddd; padding: 8px; }
-    th { background: #f7f7f7; }
-  </style>
+  <title>Senarai Staf</title>
 </head>
 <body>
-  <h2>Senarai Staf</h2>
+  <h2>Carian Staf</h2>
+  <label>Pilih staf:</label>
+  <select id="staffSelect"></select>
 
-  <label for="staffSelect">Pilih Nama Staf:</label>
-  <select id="staffSelect">
-    <option value="">-- Pilih --</option>
-  </select>
-
-  <div class="status" id="status">Memuat data…</div>
-
-  <table id="resultTable" style="display:none;">
-    <thead>
-      <tr>
-        <th>Nama Staf</th>
-        <th>Jawatankuasa</th>
-        <th>Jumlah Pemberat</th>
-      </tr>
-    </thead>
-    <tbody id="resultBody"></tbody>
-  </table>
+  <div id="result"></div>
 
   <script>
-    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyB51yXVYq6pcRvePVPMgYAxhvlp86_PyC4WPvnCJM_iX8V08ePbWAbuv1MusQO4NiMFA/exec";
-    const POLL_MS = 1000; // auto refresh setiap 1s
-
-    let allData = [];
-    let currentName = "";
-    let schema = null; // { type: 'object'|'array', keys/indexes }
-
-    // Helpers
-    const norm = s => (s ?? "").toString().trim().toLowerCase().replace(/[\s_\-\/]+/g,'');
-    const nameSyn = new Set(["namastaf","nama","staf","staff"]);
-    const comSyn  = new Set(["jawatankuasa","ajk","unit","jawatan","komiti","committee"]);
-    const wtSyn   = new Set(["jumlahpemberat","pemberat","jumlah","total","markah","skor","score","weight"]);
-
-    function detectSchema(sample) {
-      // Sample boleh jadi objek atau array
-      if (Array.isArray(sample)) {
-        // Anggap [nama, jawatankuasa, pemberat] (susunan A,B,C)
-        return { type: "array", nameIdx: 0, comIdx: 1, wtIdx: 2 };
-      } else if (sample && typeof sample === "object") {
-        const keys = Object.keys(sample);
-        // Cari padanan terbaik ikut sinonim
-        let nameKey = null, comKey = null, wtKey = null;
-        for (const k of keys) {
-          const nk = norm(k);
-          if (!nameKey && nameSyn.has(nk)) nameKey = k;
-          if (!comKey  && comSyn.has(nk))  comKey  = k;
-          if (!wtKey   && wtSyn.has(nk))   wtKey   = k;
-        }
-        // fallback kalau tak jumpa tepat
-        if (!nameKey) nameKey = keys.find(k => norm(k).includes("nama")) || keys[0];
-        if (!comKey)  comKey  = keys.find(k => norm(k).includes("jawat")) || keys[1] || keys[0];
-        if (!wtKey)   wtKey   = keys.find(k => norm(k).includes("pemberat") || norm(k).includes("jumlah") || norm(k).includes("markah") || norm(k).includes("score")) || keys[2] || keys[0];
-        return { type: "object", nameKey, comKey, wtKey, keys };
-      }
-      return null;
-    }
-
-    function getName(row) {
-      if (!schema) return "";
-      if (schema.type === "array") return (row[schema.nameIdx] ?? "").toString();
-      return (row[schema.nameKey] ?? "").toString();
-    }
-    function getCom(row) {
-      if (!schema) return "";
-      if (schema.type === "array") return (row[schema.comIdx] ?? "").toString();
-      return (row[schema.comKey] ?? "").toString();
-    }
-    function getWt(row) {
-      if (!schema) return "";
-      if (schema.type === "array") return row[schema.wtIdx];
-      return row[schema.wtKey];
-    }
-
-    function updateStatus(extra = "") {
-      const el = document.getElementById("status");
-      if (!schema) { el.textContent = "Menunggu data…" + (extra ? " " + extra : ""); return; }
-      if (schema.type === "object") {
-        el.textContent = `Skema dikesan (objek): name='${schema.nameKey}', jawatankuasa='${schema.comKey}', pemberat='${schema.wtKey}'. ${extra}`;
-      } else {
-        el.textContent = `Skema dikesan (array): [nama=${schema.nameIdx}, jawatankuasa=${schema.comIdx}, pemberat=${schema.wtIdx}]. ${extra}`;
-      }
-    }
-
     async function loadData() {
-      try {
-        const res = await fetch(APPS_SCRIPT_URL + "?_=" + Date.now(), { cache: "no-store" });
-        const data = await res.json();
+      let response = await fetch("https://script.google.com/macros/s/AKfycbyB51yXVYq6pcRvePVPMgYAxhvlp86_PyC4WPvnCJM_iX8V08ePbWAbuv1MusQO4NiMFA/exec");
+      let data = await response.json();
 
-        if (!Array.isArray(data) || data.length === 0) {
-          document.getElementById("status").textContent = "Tiada data ditemui.";
-          return;
-        }
+      let select = document.getElementById("staffSelect");
+      select.innerHTML = "<option value=''>--Pilih Nama Staf--</option>";
 
-        allData = data;
+      data.forEach(staff => {
+        let option = document.createElement("option");
+        option.value = staff.nama;
+        option.textContent = staff.nama;
+        select.appendChild(option);
+      });
 
-        // Detect schema once (atau jika format berubah)
-        const newSchema = detectSchema(allData[0]);
-        if (JSON.stringify(newSchema) !== JSON.stringify(schema)) {
-          schema = newSchema;
-          updateStatus(`(dikemaskini ${new Date().toLocaleTimeString()})`);
-          // Isi semula dropdown ikut skema baharu
-          fillDropdown();
+      select.onchange = function() {
+        let chosen = data.find(s => s.nama === this.value);
+        if (chosen) {
+          document.getElementById("result").innerHTML = `
+            <p><b>Nama:</b> ${chosen.nama}</p>
+            <p><b>Jawatankuasa:</b> ${chosen.jawatankuasa}</p>
+            <p><b>Pemberat:</b> ${chosen.pemberat}</p>
+          `;
         } else {
-          updateStatus(`(kemaskini ${new Date().toLocaleTimeString()})`);
+          document.getElementById("result").innerHTML = "";
         }
-
-        // Jika sudah pilih nama, refresh jadualnya
-        if (currentName) showStaffData(currentName);
-
-      } catch (e) {
-        document.getElementById("status").textContent = "Ralat ambil data. Cuba lagi…";
-        console.error(e);
-      }
+      };
     }
 
-    function fillDropdown() {
-      const sel = document.getElementById("staffSelect");
-      const selectedBefore = sel.value;
-      // Reset (kekalkan option pertama)
-      sel.innerHTML = '<option value="">-- Pilih --</option>';
-
-      // Senarai nama unik, buang kosong
-      const names = Array.from(new Set(
-        allData.map(r => getName(r)).filter(Boolean)
-      )).sort((a,b) => a.localeCompare(b, 'ms'));
-
-      names.forEach(name => {
-        const opt = document.createElement("option");
-        opt.value = name;
-        opt.textContent = name;
-        sel.appendChild(opt);
-      });
-
-      // Kekalkan pilihan lama jika masih wujud
-      if (selectedBefore && names.includes(selectedBefore)) {
-        sel.value = selectedBefore;
-        currentName = selectedBefore;
-      } else {
-        currentName = "";
-        document.getElementById("resultTable").style.display = "none";
-      }
-    }
-
-    function showStaffData(name) {
-      const resultBody = document.getElementById("resultBody");
-      const resultTable = document.getElementById("resultTable");
-      resultBody.innerHTML = "";
-
-      const staffRows = allData.filter(r => getName(r) === name);
-      staffRows.forEach(r => {
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td>${getName(r)}</td>
-          <td>${getCom(r)}</td>
-          <td>${getWt(r) ?? ""}</td>
-        `;
-        resultBody.appendChild(tr);
-      });
-
-      resultTable.style.display = staffRows.length ? "table" : "none";
-    }
-
-    document.getElementById("staffSelect").addEventListener("change", function() {
-      currentName = this.value;
-      if (currentName) showStaffData(currentName);
-      else document.getElementById("resultTable").style.display = "none";
-    });
-
-    // Mula & auto refresh
     loadData();
-    setInterval(loadData, POLL_MS);
   </script>
 </body>
 </html>
