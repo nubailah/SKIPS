@@ -1,10 +1,11 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Senarai Staf</title>
+  <title>Laporan Staf</title>
 </head>
 <body>
-  <h2>Carian Staf</h2>
+  <h2>Senarai Staf</h2>
+  
   <label>Pilih staf:</label>
   <select id="staffSelect"></select>
 
@@ -12,7 +13,7 @@
 
   <script>
     async function loadData() {
-      let response = await fetch("https://script.google.com/macros/s/AKfycbzRC-yL02g4nWucwsCgEfu1XEjdKTpZC7VMouG5pM__K7S02Mx1DTWdvutwoHDso0daHw/exec");
+      let response = await fetch("https://script.google.com/macros/s/AKfycbyB51yXVYq6pcRvePVPMgYAxhvlp86_PyC4WPvnCJM_iX8V08ePbWAbuv1MusQO4NiMFA/exec");
       let data = await response.json();
 
       let select = document.getElementById("staffSelect");
@@ -30,7 +31,9 @@
         if (chosen) {
           document.getElementById("result").innerHTML = `
             <p><b>Nama:</b> ${chosen.nama}</p>
-            <p><b>Jawatankuasa:</b> ${chosen.jawatankuasa}</p>
+            <p><b>Kod Portfolio:</b> ${chosen.kod}</p>
+            <p><b>Nama Portfolio:</b> ${chosen.portfolio}</p>
+            <p><b>Jawatan:</b> ${chosen.jawatan}</p>
             <p><b>Pemberat:</b> ${chosen.pemberat}</p>
           `;
         } else {
@@ -43,4 +46,3 @@
   </script>
 </body>
 </html>
-
