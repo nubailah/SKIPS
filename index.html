@@ -24,11 +24,11 @@
   </table>
 
   <script>
-    const url = "https://script.google.com/macros/s/AKfycbzC2RPdrEYKQxNnu78GojtgLGQmE2373S-vsD0rNvYsuUZdENN-tNhCM1KMzEgu0xaRFg/exec"; // ganti dengan URL Apps Script cikgu
+    const url = "https://script.google.com/macros/s/AKfycbxyz12345/exec"; // tukar dgn URL Apps Script cikgu
+    const source = new EventSource(url);
 
-    async function loadData() {
-      const res = await fetch(url);
-      const data = await res.json();
+    source.onmessage = function(event) {
+      const data = JSON.parse(event.data);
       const tbody = document.querySelector("#dataTable tbody");
       tbody.innerHTML = "";
 
@@ -41,15 +41,11 @@
         `;
         tbody.appendChild(tr);
       });
-    }
+    };
 
-    // Muat data pertama kali
-    loadData();
-
-    // Auto refresh setiap 5s → tapi bukan refresh page
-    setInterval(loadData, 5000);
+    source.onerror = function(err) {
+      console.error("SSE error:", err);
+    };
   </script>
 </body>
 </html>
-
-
