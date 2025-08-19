@@ -2,7 +2,7 @@
 <html lang="ms">
 <head>
 <meta charset="UTF-8">
-<title>Kategori Dropdown Interaktif</title>
+<title>Kategori Dropdown Interaktif dengan Cari</title>
 <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 <style>
   table { border-collapse: collapse; width: 100%; margin-bottom: 20px; }
@@ -15,14 +15,8 @@
 <body>
 
 <h2>Filter Mengikut Kategori</h2>
-<select id="kategoriDropdown">
-  <option value="">-- Pilih Kategori --</option>
-  <option value="Pentadbiran">Pentadbiran</option>
-  <option value="Perakaunan">Perakaunan</option>
-  <option value="Sains Kuantitatif">Sains Kuantitatif</option>
-  <option value="Bahasa Inggeris">Bahasa Inggeris</option>
-  <option value="Pengajian Am">Pengajian Am</option>
-</select>
+<input type="text" id="kategoriSearch" placeholder="Cari kategori (Column G)">
+<br><br>
 
 <h3>Ringkasan Column E</h3>
 <table id="kategoriTable">
@@ -52,14 +46,7 @@
 <script>
 const sheetURL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTKxmTXERKgk9gTUlqlyeRrmdfJU21FMdj1mDpf5azCa_hW4Gfg5TgpQcHvb-ujRo72cLIN2p0Lkgcj/pub?output=csv&gid=975658514';
 let sheetData = [];
-
-const kategoriMap = {
-  "Pentadbiran": "PT",
-  "Perakaunan": "ACC",
-  "Sains Kuantitatif": "QS",
-  "Bahasa Inggeris": "ENG",
-  "Pengajian Am": "PAM"
-};
+let selectedRow = null;
 
 // Parse CSV dengan PapaParse
 Papa.parse(sheetURL, {
@@ -68,26 +55,31 @@ Papa.parse(sheetURL, {
   skipEmptyLines: true,
   complete: function(results) {
     sheetData = results.data;
+    displayKategori(''); // Papar semua awalnya
   }
 });
 
-let selectedRow = null;
+// Event search box
+document.getElementById('kategoriSearch').addEventListener('input', function() {
+  const searchValue = this.value.trim().toUpperCase();
+  displayKategori(searchValue);
+});
 
-// Event Kategori Dropdown
-document.getElementById('kategoriDropdown').addEventListener('change', function() {
-  const selected = this.value;
-  const suffix = kategoriMap[selected];
+// Function paparkan ringkasan kategori
+function displayKategori(searchValue){
   const tbody = document.querySelector('#kategoriTable tbody');
   tbody.innerHTML = '';
   document.querySelector('#detailTable tbody').innerHTML = '';
   document.getElementById('detailSumD').textContent = '0';
   selectedRow = null;
 
-  if(!suffix) return;
+  // Filter berdasarkan Column G (index 6)
+  let filtered = sheetData;
+  if(searchValue){
+    filtered = sheetData.filter(r => (r[6] || '').toUpperCase().includes(searchValue));
+  }
 
-  const filtered = sheetData.filter(r => r[4] && r[4].endsWith(suffix));
-
-  // Group by Column E
+  // Group by Column E (index 4)
   const groupMap = {};
   filtered.forEach(r => {
     const key = r[4];
@@ -96,15 +88,13 @@ document.getElementById('kategoriDropdown').addEventListener('change', function(
     else groupMap[key] = val;
   });
 
-  // Sort menurun ikut jumlah Column D
+  // Sort menurun ikut jumlah D
   const sorted = Object.entries(groupMap).sort((a,b) => b[1]-a[1]);
 
-  // Display table
   sorted.forEach(([colE, sumD]) => {
     const tr = document.createElement('tr');
     tr.innerHTML = `<td>${colE}</td><td>${sumD}</td>`;
     tr.addEventListener('click', () => {
-      // Highlight row
       if(selectedRow) selectedRow.classList.remove('selected');
       tr.classList.add('selected');
       selectedRow = tr;
@@ -112,7 +102,7 @@ document.getElementById('kategoriDropdown').addEventListener('change', function(
     });
     tbody.appendChild(tr);
   });
-});
+}
 
 // Function paparkan detail Column A-D untuk Column E terpilih
 function showDetail(colEValue){
