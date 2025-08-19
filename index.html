@@ -2,59 +2,82 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Data Staf</title>
+  <title>Data Pemberat Staff</title>
   <style>
-    body { font-family: Arial, sans-serif; padding: 20px; }
-    table { border-collapse: collapse; width: 100%; margin-top: 10px; }
-    th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-    th { background-color: #f4f4f4; }
-    #search { margin-bottom: 10px; padding: 5px; width: 300px; }
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    h1 { text-align: center; }
+    input { margin: 10px 0; padding: 8px; width: 300px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
+    th { background-color: #f2f2f2; }
+    tr:hover { background-color: #f9f9f9; }
   </style>
 </head>
 <body>
-  <h2>Senarai Staf</h2>
-  <input type="text" id="search" placeholder="Cari nama staf...">
-  <table id="dataTable"></table>
+  <h1>Senarai Jawatankuasa & Pemberat Staff</h1>
+
+  <input type="text" id="searchInput" placeholder="Cari nama staf..." onkeyup="filterTable()">
+
+  <table id="staffTable">
+    <thead>
+      <tr id="tableHeader"></tr>
+    </thead>
+    <tbody id="tableBody"></tbody>
+  </table>
 
   <script>
-    const sheetId = "1uFVEYip6WQEOUugGXA48QkqqweU2dnFj7cFZaSqwvBM";
-    const apiKey = "AIzaSyDZ_H2MYtZHrAdxLGxYNUwrUcXUJRrrS34";
-    const range = "ALL!A1:C50";
+    const API_KEY = "AIzaSyDZ_H2MYtZHrAdxLGxYNUwrUcXUJRrrS34";
+    const SHEET_ID = "1uFVEYip6WQEOUugGXA48QkqqweU2dnFj7cFZaSqwvBM";
+    const RANGE = "ALL!A1:F100"; // adjust ikut column cikgu
 
     async function loadData() {
-      const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${range}?key=${apiKey}`;
-      const res = await fetch(url);
-      const data = await res.json();
+      try {
+        const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${RANGE}?key=${API_KEY}`;
+        const response = await fetch(url);
+        const data = await response.json();
 
-      const values = data.values;
-      if (!values) return;
+        if (!data.values) {
+          document.getElementById("tableBody").innerHTML = "<tr><td colspan='6'>Tiada data ditemui</td></tr>";
+          return;
+        }
 
-      // buat table
-      let table = "<tr>";
-      values[0].forEach(h => { table += `<th>${h}</th>`; });
-      table += "</tr>";
+        // Header
+        const headers = data.values[0];
+        let headerHTML = "";
+        headers.forEach(h => headerHTML += `<th>${h}</th>`);
+        document.getElementById("tableHeader").innerHTML = headerHTML;
 
-      for (let i = 1; i < values.length; i++) {
-        table += "<tr>";
-        values[i].forEach(v => { table += `<td>${v}</td>`; });
-        table += "</tr>";
+        // Rows
+        let rowsHTML = "";
+        data.values.slice(1).forEach(row => {
+          rowsHTML += "<tr>";
+          headers.forEach((_, i) => {
+            rowsHTML += `<td>${row[i] || ""}</td>`;
+          });
+          rowsHTML += "</tr>";
+        });
+
+        document.getElementById("tableBody").innerHTML = rowsHTML;
+
+      } catch (error) {
+        console.error("Error:", error);
       }
-
-      document.getElementById("dataTable").innerHTML = table;
     }
 
-    // search filter
-    document.getElementById("search").addEventListener("keyup", function() {
-      let filter = this.value.toLowerCase();
-      let rows = document.querySelectorAll("#dataTable tr");
-      rows.forEach((row, i) => {
-        if (i === 0) return; // skip header
-        let text = row.innerText.toLowerCase();
-        row.style.display = text.includes(filter) ? "" : "none";
-      });
-    });
+    // Search filter
+    function filterTable() {
+      const input = document.getElementById("searchInput").value.toLowerCase();
+      const rows = document.querySelectorAll("#tableBody tr");
 
+      rows.forEach(row => {
+        const text = row.innerText.toLowerCase();
+        row.style.display = text.includes(input) ? "" : "none";
+      });
+    }
+
+    // Auto refresh every 10s
     loadData();
+    setInterval(loadData, 10000);
   </script>
 </body>
 </html>
