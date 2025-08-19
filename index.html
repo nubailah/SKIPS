@@ -1,150 +1,80 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Laporan Portfolio</title>
-  <style>
-    body { font-family: Arial, sans-serif; padding: 20px; }
-    table { border-collapse: collapse; width: 100%; margin-top: 15px; }
-    th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
-    th { background: #f2f2f2; }
-    select, input { padding: 6px; margin: 8px 0; }
-  </style>
+  <base target="_top">
 </head>
 <body>
-  <h2>Laporan Mengikut Kategori</h2>
-  <label>Pilih Kategori:</label>
-  <select id="kategoriDropdown" onchange="filterKategori()">
-    <option value="">--Pilih--</option>
-    <option value="PT">Pentadbiran</option>
-    <option value="PAM">Pengajian Am</option>
-    <option value="QA">Sains Kuantitatif</option>
-    <option value="ACC">Perakaunan</option>
+  <h2>Filter Mengikut Kategori</h2>
+  <select id="kategoriDropdown" onchange="loadKategori()">
+    <option value="">-- Pilih Kategori --</option>
+    <option value="PT">Pentadbiran (PT)</option>
+    <option value="PAM">Pengajian Am (PAM)</option>
+    <option value="QA">Sains Kuantitatif (QA)</option>
+    <option value="ACC">Perakaunan (ACC)</option>
   </select>
 
-  <table id="kategoriTable">
-    <thead>
-      <tr>
-        <th>Nama Staf</th>
-        <th>Kod Portfolio</th>
-        <th>Nama Portfolio</th>
-        <th>Jawatan</th>
-        <th>Pemberat</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
-
-  <h3>Jumlah Pemberat Mengikut Staf</h3>
-  <table id="jumlahTable">
-    <thead>
-      <tr>
-        <th>Nama Staf</th>
-        <th>Bil Kod Portfolio</th>
-        <th>Jumlah Pemberat</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
+  <div id="kategoriOutput"></div>
 
   <hr>
+
   <h2>Carian Mengikut Nama Staf</h2>
-  <input type="text" id="searchNama" list="namaList" placeholder="Taip nama staf..." onchange="searchStaf()"/>
-  <datalist id="namaList"></datalist>
-
-  <table id="stafTable">
-    <thead>
-      <tr>
-        <th>Kod Portfolio</th>
-        <th>Nama Portfolio</th>
-        <th>Jawatan</th>
-        <th>Pemberat</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
-
-  <h3>Ringkasan Staf</h3>
-  <p><b>Bilangan Kod Portfolio:</b> <span id="bilKod"></span></p>
-  <p><b>Jumlah Pemberat:</b> <span id="jumlahPemberat"></span></p>
+  <select id="stafDropdown" onchange="searchStaff()"></select>
+  <div id="staffOutput"></div>
 
   <script>
-    let allData = [];
-    const url = "https://script.google.com/macros/s/AKfycbyERtoUECTrD-fyBXTUfbKc1PFHpcVuIFGAoVbaYymkQ5UVtsDmPSq_QRc4qeet_hp1kw/exec";
-
-    async function fetchData() {
-      const res = await fetch(url);
-      allData = await res.json();
-
-      // isi combobox nama staf
-      let stafSet = [...new Set(allData.map(r => r.NamaStaf))];
-      let namaList = document.getElementById("namaList");
-      stafSet.forEach(n => {
-        let opt = document.createElement("option");
-        opt.value = n;
-        namaList.appendChild(opt);
-      });
-    }
-
-    function filterKategori() {
+    function loadKategori() {
       let kategori = document.getElementById("kategoriDropdown").value;
-      let filtered = allData.filter(r => r.KodPortfolio.endsWith(kategori));
+      if (!kategori) return;
 
-      // table detail
-      let tbody = document.querySelector("#kategoriTable tbody");
-      tbody.innerHTML = "";
-      filtered.forEach(r => {
-        let tr = `<tr>
-          <td>${r.NamaStaf}</td>
-          <td>${r.KodPortfolio}</td>
-          <td>${r.NamaPortfolio}</td>
-          <td>${r.Jawatan}</td>
-          <td>${r.Pemberat}</td>
-        </tr>`;
-        tbody.innerHTML += tr;
-      });
+      google.script.run.withSuccessHandler(displayKategori).getKategoriData(kategori);
+    }
 
-      // jumlah pemberat ikut staf
-      let sumMap = {};
-      filtered.forEach(r => {
-        if (!sumMap[r.NamaStaf]) sumMap[r.NamaStaf] = { bil: 0, total: 0 };
-        sumMap[r.NamaStaf].bil++;
-        sumMap[r.NamaStaf].total += Number(r.Pemberat);
-      });
-
-      let tbody2 = document.querySelector("#jumlahTable tbody");
-      tbody2.innerHTML = "";
-      for (let staf in sumMap) {
-        tbody2.innerHTML += `<tr>
-          <td>${staf}</td>
-          <td>${sumMap[staf].bil}</td>
-          <td>${sumMap[staf].total}</td>
-        </tr>`;
+    function displayKategori(data) {
+      let html = "<h3>Ringkasan</h3><table border='1'><tr><th>Nama Staf</th><th>Bil Kod</th><th>Jumlah Pemberat</th></tr>";
+      for (let staf in data.summary) {
+        html += `<tr><td>${staf}</td><td>${data.summary[staf].bilKod}</td><td>${data.summary[staf].totalPemberat}</td></tr>`;
       }
-    }
+      html += "</table>";
 
-    function searchStaf() {
-      let nama = document.getElementById("searchNama").value;
-      let filtered = allData.filter(r => r.NamaStaf === nama);
-
-      let tbody = document.querySelector("#stafTable tbody");
-      tbody.innerHTML = "";
-      let bil = 0, total = 0;
-      filtered.forEach(r => {
-        bil++;
-        total += Number(r.Pemberat);
-        tbody.innerHTML += `<tr>
-          <td>${r.KodPortfolio}</td>
-          <td>${r.NamaPortfolio}</td>
-          <td>${r.Jawatan}</td>
-          <td>${r.Pemberat}</td>
-        </tr>`;
+      html += "<h3>Butiran</h3><table border='1'><tr><th>Kod</th><th>Portfolio</th><th>Jawatan</th><th>Pemberat</th><th>Staf</th></tr>";
+      data.details.forEach(d => {
+        html += `<tr><td>${d.kod}</td><td>${d.namaPortfolio}</td><td>${d.jawatan}</td><td>${d.pemberat}</td><td>${d.staf}</td></tr>`;
       });
+      html += "</table>";
 
-      document.getElementById("bilKod").innerText = bil;
-      document.getElementById("jumlahPemberat").innerText = total;
+      document.getElementById("kategoriOutput").innerHTML = html;
     }
 
-    fetchData();
+    function loadStaff() {
+      google.script.run.withSuccessHandler(function(staffList) {
+        let dropdown = document.getElementById("stafDropdown");
+        dropdown.innerHTML = "<option value=''>-- Pilih Staf --</option>";
+        staffList.forEach(s => {
+          dropdown.innerHTML += `<option value="${s}">${s}</option>`;
+        });
+      }).getAllStaff();
+    }
+
+    function searchStaff() {
+      let staf = document.getElementById("stafDropdown").value;
+      if (!staf) return;
+
+      google.script.run.withSuccessHandler(displayStaff).searchStaff(staf);
+    }
+
+    function displayStaff(data) {
+      let html = `<h3>Butiran ${data.details[0]?.staf || ""}</h3>`;
+      html += `<p>Bil Kod: ${data.bilKod}, Jumlah Pemberat: ${data.totalPemberat}</p>`;
+      html += "<table border='1'><tr><th>Kod</th><th>Portfolio</th><th>Jawatan</th><th>Pemberat</th><th>Kategori</th></tr>";
+      data.details.forEach(d => {
+        html += `<tr><td>${d.kod}</td><td>${d.namaPortfolio}</td><td>${d.jawatan}</td><td>${d.pemberat}</td><td>${d.kategori}</td></tr>`;
+      });
+      html += "</table>";
+
+      document.getElementById("staffOutput").innerHTML = html;
+    }
+
+    window.onload = loadStaff;
   </script>
 </body>
 </html>
